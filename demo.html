@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InsuranceMarket.ae — Cross-Sell Recommendation Engine (Demo)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #ffffff;
+    color: #0f172a;
+  }
+  .page { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  a { color: inherit; }
+  nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  nav button {
+    padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1;
+    background: #f8fafc; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+  }
+  nav button.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+  select.lead-picker { padding: 0.5rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; }
+
+  /* ---- Recommended For You card ---- */
+  .quote-placeholder {
+    border: 1px dashed #cbd5e1; border-radius: 12px; padding: 1rem; color: #64748b; margin-bottom: 1rem;
+  }
+  .card { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+  .card-title { margin: 0 0 1rem; font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+  .pitch-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
+  .pitch { padding: 1rem; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; }
+  .pitch h3 { margin: 0 0 0.375rem; font-size: 1.05rem; font-weight: 600; color: #1e293b; }
+  .pitch p { margin: 0 0 0.875rem; font-size: 0.95rem; line-height: 1.5; color: #475569; }
+  .cta {
+    display: inline-block; padding: 0.625rem 1.25rem; border-radius: 8px;
+    background: #2563eb; color: #fff; font-weight: 600; font-size: 0.9rem; text-decoration: none;
+  }
+  .cta:hover { background: #1d4ed8; }
+  .reason-summary { margin: 1rem 0 0; font-size: 0.825rem; color: #64748b; }
+  .score-pills { display: flex; gap: 0.5rem; margin: 0.5rem 0 1rem; }
+  .pill { padding: 0.3rem 0.7rem; border-radius: 999px; background: #e0e7ff; color: #3730a3; font-weight: 700; font-size: 0.85rem; }
+
+  /* ---- Advisor dashboard table ---- */
+  .table-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  thead th { background: #f1f5f9; font-weight: 600; color: #334155; white-space: nowrap; }
+  .sort-btn { background: none; border: none; font: inherit; font-weight: 600; color: #334155; cursor: pointer; padding: 0; }
+  .sort-btn:hover { color: #2563eb; }
+  .lead-id { font-weight: 600; color: #0f172a; white-space: nowrap; }
+  .score-badge {
+    display: inline-block; min-width: 2.5rem; padding: 0.25rem 0.5rem; border-radius: 999px;
+    background: #e0e7ff; color: #3730a3; font-weight: 700; text-align: center;
+  }
+  .chip-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+  .chip {
+    display: inline-block; padding: 0.2rem 0.5rem; border-radius: 6px;
+    background: #dcfce7; color: #166534; font-size: 0.8rem; font-weight: 600; width: fit-content;
+  }
+  .code-list { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: #475569; }
+  .muted { color: #94a3b8; }
+
+  @media (max-width: 720px) {
+    thead { display: none; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    tr { padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; }
+    td { border-bottom: none; padding: 0.25rem 0; }
+    td::before {
+      content: attr(data-label); display: block; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.03em; color: #94a3b8; margin-bottom: 0.15rem;
+    }
+  }
+  @media (max-width: 640px) {
+    .page { padding: 1rem 0.875rem 2.5rem; }
+    .cta { display: block; text-align: center; }
+  }
+
+  section[hidden] { display: none; }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>InsuranceMarket.ae — Cross-Sell Recommendation Engine</h1>
+  <p style="color:#64748b">Static demo rendering of the Quote Results card and Advisor Dashboard, driven by the same scoring rules as the production engine.</p>
+
+  <nav>
+    <button id="tab-quote" class="active" onclick="showTab('quote')">Quote Results Page</button>
+    <button id="tab-advisor" onclick="showTab('advisor')">Advisor Dashboard</button>
+  </nav>
+
+  <!-- ===================== QUOTE RESULTS VIEW ===================== -->
+  <section id="view-quote">
+    <label for="lead-picker"><strong>Sample lead:</strong></label>
+    <select id="lead-picker" class="lead-picker" onchange="renderQuote(this.value)"></select>
+
+    <h2 style="margin-top:1.25rem;">Your Quote Results</h2>
+    <p id="quote-lead-ref"></p>
+
+    <div class="quote-placeholder" id="quote-placeholder"></div>
+
+    <div id="quote-card-slot"></div>
+  </section>
+
+  <!-- ===================== ADVISOR DASHBOARD VIEW ===================== -->
+  <section id="view-advisor" hidden>
+    <h2>Advisor Dashboard</h2>
+    <p style="color:#64748b">Cross-sell scores for all leads. Click a column header to sort (defaults to highest-first).</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Lead ID</th>
+            <th><button class="sort-btn" onclick="sortBy('lifeScore')">Life Score <span id="ind-life"></span></button></th>
+            <th><button class="sort-btn" onclick="sortBy('savingsScore')">Savings Score <span id="ind-savings"></span></button></th>
+            <th>Recommended Product(s)</th>
+            <th>Reason Codes</th>
+          </tr>
+        </thead>
+        <tbody id="advisor-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+/* =====================================================================
+   Embedded port of the scoring engine + sample data, for a static,
+   no-build demo of the UI. Mirrors src/lib/scoring/engine.ts and
+   src/data/sample-leads.ts in the Next.js project.
+===================================================================== */
+
+const SALARY_BAND_LOWER_BOUND = {
+  "Below 5,000": 0, "5,000-10,000": 5000, "10,000-15,000": 10000,
+  "15,000-20,000": 15000, "20,000-30,000": 20000, "Above 30,000": 30001,
+};
+const PREMIUM_VEHICLE_MAKES = ["BMW","Mercedes-Benz","Mercedes","Audi","Porsche","Land Rover",
+  "Range Rover","Lexus","Jaguar","Bentley","Rolls-Royce","Maserati","Ferrari","Lamborghini",
+  "Aston Martin","Tesla","Cadillac","Genesis"];
+
+const REASON_LABELS = {
+  MARRIED: "Married",
+  SPOUSE_AND_CHILDREN: "Has Spouse and Children",
+  FAMILY_HEALTH_COVERAGE: "Family Health Coverage",
+  AGE_28_TO_50: "Age Between 28 and 50",
+  SALARY_ABOVE_15K: "Salary Above AED 15,000",
+  SALARY_ABOVE_20K: "Salary Above AED 20,000",
+  AGE_25_TO_45: "Age Between 25 and 45",
+  PREMIUM_VEHICLE_OWNER: "Owns a Premium Vehicle",
+  COMPANY_REGISTERED_VEHICLE: "Company-Registered Vehicle",
+  NO_DEPENDENTS: "No Dependents",
+};
+
+const PRODUCT_PITCHES = {
+  "Family Protection Plan": { headline: "Protect Your Family",
+    body: "Based on your profile, you may benefit from a Family Protection Plan that safeguards your loved ones financially.",
+    ctaLabel: "View Life Insurance Plans", ctaHref: "/products/life-insurance" },
+  "Term Life Insurance": { headline: "Protect Your Family",
+    body: "Based on your profile, you may benefit from Term Life Insurance coverage.",
+    ctaLabel: "View Life Insurance Plans", ctaHref: "/products/life-insurance" },
+  "Wealth Builder Savings Plan": { headline: "Grow Your Wealth",
+    body: "Based on your profile, a Wealth Builder Savings Plan could help you build long-term financial security.",
+    ctaLabel: "View Savings Plans", ctaHref: "/products/savings-plans" },
+  "Retirement Savings Plan": { headline: "Plan for Retirement",
+    body: "Based on your profile, you may benefit from a Retirement Savings Plan to secure your future.",
+    ctaLabel: "View Savings Plans", ctaHref: "/products/savings-plans" },
+};
+
+function calculateAge(dob, asOf = new Date("2026-06-08")) {
+  const d = new Date(dob);
+  let age = asOf.getFullYear() - d.getFullYear();
+  const hadBirthday = asOf.getMonth() > d.getMonth() ||
+    (asOf.getMonth() === d.getMonth() && asOf.getDate() >= d.getDate());
+  if (!hadBirthday) age -= 1;
+  return age;
+}
+const inRange = (age, min, max) => age >= min && age <= max;
+const salaryLowerBound = (band) => SALARY_BAND_LOWER_BOUND[band] ?? 0;
+const salaryExceeds = (band, threshold) => salaryLowerBound(band) > threshold;
+const isPremiumMake = (make) => PREMIUM_VEHICLE_MAKES.some(m => m.toLowerCase() === make.trim().toLowerCase());
+const clamp = (v, max) => Math.max(0, Math.min(max, v));
+
+function resolveAge(lead) {
+  const dob = lead.health?.dateOfBirth ?? lead.motor?.dateOfBirth;
+  return dob ? calculateAge(dob) : null;
+}
+function hasSpouseAndChildren(h) { return h.maritalStatus === "Married" && h.numberOfFamilyMembers >= 3; }
+function hasNoDependents(h) { return h.maritalStatus !== "Married" && h.numberOfFamilyMembers <= 1; }
+
+function scoreLife(lead) {
+  const factors = [];
+  const h = lead.health;
+  if (h) {
+    if (h.maritalStatus === "Married") factors.push(["MARRIED", 30]);
+    if (hasSpouseAndChildren(h)) factors.push(["SPOUSE_AND_CHILDREN", 30]);
+    if (h.individualOrFamily === "Family") factors.push(["FAMILY_HEALTH_COVERAGE", 20]);
+    if (salaryExceeds(h.salaryBand, 15000)) factors.push(["SALARY_ABOVE_15K", 10]);
+  }
+  const age = resolveAge(lead);
+  if (age !== null && inRange(age, 28, 50)) factors.push(["AGE_28_TO_50", 15]);
+  return factors;
+}
+function scoreSavings(lead) {
+  const factors = [];
+  const h = lead.health, m = lead.motor;
+  if (h && salaryExceeds(h.salaryBand, 20000)) factors.push(["SALARY_ABOVE_20K", 30]);
+  const age = resolveAge(lead);
+  if (age !== null && inRange(age, 25, 45)) factors.push(["AGE_25_TO_45", 20]);
+  if (m && isPremiumMake(m.vehicleMake)) factors.push(["PREMIUM_VEHICLE_OWNER", 20]);
+  if (m && m.vehicleRegistrationType === "Company") factors.push(["COMPANY_REGISTERED_VEHICLE", 15]);
+  if (h && hasNoDependents(h)) factors.push(["NO_DEPENDENTS", 15]);
+  return factors;
+}
+function deriveRecommendations(lifeScore, savingsScore) {
+  const products = [];
+  if (lifeScore > 70) products.push("Family Protection Plan");
+  if (lifeScore > 85) products.push("Term Life Insurance");
+  if (savingsScore > 70) products.push("Wealth Builder Savings Plan");
+  if (savingsScore > 85) products.push("Retirement Savings Plan");
+  return products;
+}
+function score(lead) {
+  const lifeFactors = scoreLife(lead);
+  const savingsFactors = scoreSavings(lead);
+  const lifeScore = clamp(lifeFactors.reduce((s, [, p]) => s + p, 0), 100);
+  const savingsScore = clamp(savingsFactors.reduce((s, [, p]) => s + p, 0), 100);
+  const recommendedProducts = deriveRecommendations(lifeScore, savingsScore);
+  const reasonCodes = [...new Set([...lifeFactors, ...savingsFactors].map(([c]) => c))];
+  const reasons = reasonCodes.map(c => REASON_LABELS[c]);
+  return { leadId: lead.leadId, lifeScore, savingsScore, recommendedProducts, reasonCodes, reasons };
+}
+
+/* ---------------- Sample leads (mirrors src/data/sample-leads.ts) ---------------- */
+const sampleLeads = [
+  { leadId: "LEAD-1001", source: "Health",
+    health: { individualOrFamily: "Family", policyholderType: "Self", dateOfBirth: "1988-03-12",
+      maritalStatus: "Married", nationality: "India", salaryBand: "20,000-30,000",
+      visaCategory: "Employment", numberOfFamilyMembers: 4, existingMedicalConditions: false },
+    motor: { vehicleRegistrationType: "Company", vehicleMake: "BMW", vehicleModel: "X5",
+      vehicleYear: 2023, nationality: "India", dateOfBirth: "1988-03-12", emirate: "Dubai", uaeLicenseDurationYears: 10 } },
+
+  { leadId: "LEAD-1002", source: "Motor",
+    motor: { vehicleRegistrationType: "Personal", vehicleMake: "Toyota", vehicleModel: "Camry",
+      vehicleYear: 2021, nationality: "UAE", dateOfBirth: "1995-07-20", emirate: "Abu Dhabi", uaeLicenseDurationYears: 6 },
+    health: { individualOrFamily: "Individual", policyholderType: "Self", dateOfBirth: "1995-07-20",
+      maritalStatus: "Single", nationality: "UAE", salaryBand: "15,000-20,000",
+      visaCategory: "Golden Visa", numberOfFamilyMembers: 1, existingMedicalConditions: false } },
+
+  { leadId: "LEAD-1003", source: "Health",
+    health: { individualOrFamily: "Family", policyholderType: "Self", dateOfBirth: "1980-01-30",
+      maritalStatus: "Married", nationality: "UK", salaryBand: "Above 30,000",
+      visaCategory: "Employment", numberOfFamilyMembers: 5, existingMedicalConditions: true },
+    motor: { vehicleRegistrationType: "Company", vehicleMake: "Mercedes-Benz", vehicleModel: "E-Class",
+      vehicleYear: 2024, nationality: "UK", dateOfBirth: "1980-01-30", emirate: "Dubai", uaeLicenseDurationYears: 15 } },
+
+  { leadId: "LEAD-1004", source: "Motor",
+    motor: { vehicleRegistrationType: "Company", vehicleMake: "Porsche", vehicleModel: "Cayenne",
+      vehicleYear: 2022, nationality: "Lebanon", dateOfBirth: "1992-11-02", emirate: "Dubai", uaeLicenseDurationYears: 8 },
+    health: { individualOrFamily: "Individual", policyholderType: "Self", dateOfBirth: "1992-11-02",
+      maritalStatus: "Single", nationality: "Lebanon", salaryBand: "Above 30,000",
+      visaCategory: "Investor", numberOfFamilyMembers: 1, existingMedicalConditions: false } },
+
+  { leadId: "LEAD-1005", source: "Health",
+    health: { individualOrFamily: "Individual", policyholderType: "Self", dateOfBirth: "1965-09-18",
+      maritalStatus: "Widowed", nationality: "Pakistan", salaryBand: "10,000-15,000",
+      visaCategory: "Dependent", numberOfFamilyMembers: 1, existingMedicalConditions: true } },
+];
+
+/* ---------------- Rendering: Quote Results view ---------------- */
+function renderQuote(leadId) {
+  const lead = sampleLeads.find(l => l.leadId === leadId);
+  const rec = score(lead);
+  document.getElementById("quote-lead-ref").textContent = "Lead reference: " + lead.leadId;
+  document.getElementById("quote-placeholder").textContent =
+    `[ Existing ${lead.source} insurance quote comparison renders here ]`;
+
+  const slot = document.getElementById("quote-card-slot");
+  if (rec.recommendedProducts.length === 0) {
+    slot.innerHTML = `<p style="color:#94a3b8;margin-top:1.5rem;">No cross-sell recommendations for this lead (Life ${rec.lifeScore} / Savings ${rec.savingsScore}).</p>`;
+    return;
+  }
+
+  const pitches = rec.recommendedProducts.map(p => {
+    const pitch = PRODUCT_PITCHES[p];
+    return `<li class="pitch">
+      <h3>${pitch.headline}</h3>
+      <p>${pitch.body}</p>
+      <a class="cta" href="${pitch.ctaHref}">${pitch.ctaLabel}</a>
+    </li>`;
+  }).join("");
+
+  slot.innerHTML = `
+    <div class="score-pills">
+      <span class="pill">Life Score: ${rec.lifeScore}</span>
+      <span class="pill">Savings Score: ${rec.savingsScore}</span>
+    </div>
+    <section class="card" aria-labelledby="rfy-heading">
+      <h2 class="card-title" id="rfy-heading">Recommended For You</h2>
+      <ul class="pitch-list">${pitches}</ul>
+      <p class="reason-summary">Why we recommend this: ${rec.reasons.join(" · ")}</p>
+    </section>`;
+}
+
+/* ---------------- Rendering: Advisor Dashboard view ---------------- */
+let sortKey = "lifeScore";
+let descending = true;
+
+function sortBy(key) {
+  if (key === sortKey) descending = !descending;
+  else { sortKey = key; descending = true; }
+  renderAdvisor();
+}
+
+function renderAdvisor() {
+  document.getElementById("ind-life").textContent = sortKey === "lifeScore" ? (descending ? "▼" : "▲") : "";
+  document.getElementById("ind-savings").textContent = sortKey === "savingsScore" ? (descending ? "▼" : "▲") : "";
+
+  const results = sampleLeads.map(score);
+  results.sort((a, b) => descending ? b[sortKey] - a[sortKey] : a[sortKey] - b[sortKey]);
+
+  const tbody = document.getElementById("advisor-tbody");
+  tbody.innerHTML = results.map(r => `
+    <tr>
+      <td data-label="Lead ID" class="lead-id">${r.leadId}</td>
+      <td data-label="Life Score"><span class="score-badge">${r.lifeScore}</span></td>
+      <td data-label="Savings Score"><span class="score-badge">${r.savingsScore}</span></td>
+      <td data-label="Recommended Product(s)">
+        ${r.recommendedProducts.length
+          ? `<ul class="chip-list">${r.recommendedProducts.map(p => `<li class="chip">${p}</li>`).join("")}</ul>`
+          : `<span class="muted">None</span>`}
+      </td>
+      <td data-label="Reason Codes">
+        ${r.reasonCodes.length
+          ? `<span class="code-list">${r.reasonCodes.join(", ")}</span>`
+          : `<span class="muted">—</span>`}
+      </td>
+    </tr>`).join("");
+}
+
+/* ---------------- Tabs + init ---------------- */
+function showTab(tab) {
+  document.getElementById("view-quote").hidden = tab !== "quote";
+  document.getElementById("view-advisor").hidden = tab !== "advisor";
+  document.getElementById("tab-quote").classList.toggle("active", tab === "quote");
+  document.getElementById("tab-advisor").classList.toggle("active", tab === "advisor");
+}
+
+(function init() {
+  const picker = document.getElementById("lead-picker");
+  picker.innerHTML = sampleLeads.map(l => `<option value="${l.leadId}">${l.leadId} (${l.source} lead)</option>`).join("");
+  renderQuote(sampleLeads[0].leadId);
+  renderAdvisor();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+.panel {
+  margin-bottom: 1.5rem;
+}
+
+.dropzone {
+  border: 1.5px dashed #cdd5db;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  background: #fafbfc;
+}
+
+.dropzone:hover {
+  border-color: #1c6fb4;
+  background: #f5f9fc;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.dropTitle {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #2b333a;
+}
+
+.dropHint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #5b6770;
+}
+
+.success {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: #1f7a4d;
+  font-weight: 600;
+}
+
+.error {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: #b3372c;
+  font-weight: 600;
+}
+
+.warnings {
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: #5b6770;
+}
+
+.warnings summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.warnings ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.warnings li {
+  margin-bottom: 0.2rem;
+}

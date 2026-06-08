@@ -1,0 +1,101 @@
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+.stat { border: 1px solid var(--line); border-radius: 10px; padding: 0.9rem 1rem; background: #fff; }
+.statNum { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+.statLabel { font-size: 0.78rem; color: var(--slate); margin-top: 0.3rem; }
+.statLife .statNum { color: var(--brand-blue); }
+.statSavings .statNum { color: var(--green); }
+
+.controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.controlsGroup { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.controlsGroup label { font-size: 0.8rem; color: var(--slate); font-weight: 600; }
+.chip {
+  font: inherit; font-size: 0.78rem; padding: 0.32rem 0.65rem; border-radius: 999px;
+  border: 1px solid var(--line); background: #fff; cursor: pointer; color: var(--slate); font-weight: 600;
+}
+.chipActive { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.tableWrap { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.table thead th {
+  background: var(--panel); text-align: left; font-size: 0.74rem; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--slate); font-weight: 700; padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.table thead th button {
+  background: none; border: none; font: inherit; font-weight: 700; color: var(--slate); cursor: pointer;
+  padding: 0; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.74rem;
+}
+.table thead th button:hover, .sortActive { color: var(--brand-blue) !important; }
+.table tbody tr:not(.detailRow) { border-bottom: 1px solid var(--line); cursor: pointer; }
+.table tbody tr:not(.detailRow):hover { background: #fafbfc; }
+.rowExpanded { background: var(--panel); }
+.table td { padding: 0.65rem 0.9rem; vertical-align: middle; }
+.nameCell .name { font-weight: 700; color: var(--ink); }
+.nameCell .contact { font-size: 0.76rem; color: var(--slate); margin-top: 0.1rem; }
+.chevronCell { text-align: right; }
+.chevron { color: var(--slate); font-size: 0.7rem; }
+.emptyState { text-align: center; padding: 1.5rem; color: var(--low); }
+
+.propCell { display: flex; align-items: center; gap: 0.55rem; }
+.barTrack { width: 72px; height: 6px; border-radius: 999px; background: #eef1f3; overflow: hidden; }
+.barFill { height: 100%; border-radius: 999px; }
+.tierBadge { font-size: 0.72rem; font-weight: 700; padding: 0.18rem 0.5rem; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; }
+.tierVeryHigh { color: var(--very-high); background: #e7f3ec; border-color: #cfe6da; }
+.tierHigh { color: var(--high); background: #e8f1f9; border-color: #cfe1f1; }
+.tierModerate { color: var(--moderate); background: #faf2e2; border-color: #f0e1c3; }
+.tierLow { color: var(--low); background: #f1f3f4; border-color: #e3e7eb; }
+.scoreNum { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 1.6rem; display: inline-block; }
+
+.bucketTags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.tag { font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid var(--line); color: var(--ink); background: #fff; white-space: nowrap; }
+.tagLife { border-color: #cfe1f1; background: #eef5fb; color: var(--brand-blue-dark); }
+.tagSavings { border-color: #cfe6da; background: #eef7f1; color: var(--very-high); }
+.muted { color: var(--low); font-size: 0.8rem; }
+
+.detailRow td { padding: 0; border-bottom: 1px solid var(--line); }
+.detail { padding: 1.1rem 1.4rem 1.4rem; background: var(--panel); }
+.detailGrid { display: grid; grid-template-columns: 1.05fr 1fr 1fr; gap: 1.25rem; }
+.detail h4 { margin: 0 0 0.6rem; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--slate); font-weight: 700; }
+.profileList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.profileList li { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.85rem; }
+.k { color: var(--slate); }
+.v { font-weight: 600; text-align: right; }
+
+.reasonList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.reasonList li { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.82rem; line-height: 1.4; }
+.reasonDot { width: 6px; height: 6px; border-radius: 999px; flex: none; margin-top: 0.45rem; }
+.reasonText { color: var(--ink); flex: 1; }
+.reasonPts { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--slate); white-space: nowrap; }
+
+.actionCard { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 0.85rem; margin-top: 0.6rem; }
+.actionHead { margin-bottom: 0.35rem; }
+.actionCard p { margin: 0 0 0.6rem; font-size: 0.78rem; color: var(--slate); line-height: 1.4; }
+.btnQuiet {
+  width: 100%; font: inherit; font-size: 0.78rem; padding: 0.4rem 0.6rem; border-radius: 7px;
+  border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+}
+.btnQuiet:hover { border-color: var(--brand-blue); color: var(--brand-blue); }
+
+.logSection { margin-top: 2rem; }
+.logSection h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+.logList { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.logList li { padding: 0.65rem 0.9rem; font-size: 0.82rem; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 0.6rem; }
+.logList li:last-child { border-bottom: none; }
+.logDot { width: 7px; height: 7px; border-radius: 999px; background: var(--green); flex: none; margin-top: 0.3rem; }
+.logEmpty { padding: 1.2rem; text-align: center; color: var(--low); font-size: 0.84rem; border: 1px solid var(--line); border-radius: 10px; }
+
+@media (max-width: 900px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .detailGrid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .table thead { display: none; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table tbody tr:not(.detailRow) { padding: 0.7rem 0.9rem; }
+  .table td { padding: 0.2rem 0; }
+  .table td[data-label]::before {
+    content: attr(data-label); display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--low); margin-bottom: 0.1rem;
+  }
+  .detail { padding: 1rem; }
+}
