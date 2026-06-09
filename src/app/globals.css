@@ -56,6 +56,28 @@ a {
   flex: 1;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.exportBtn {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.exportBtn:hover {
+  border-color: var(--slate);
+}
+
 .uploadBtn {
   font: inherit;
   font-size: 0.82rem;

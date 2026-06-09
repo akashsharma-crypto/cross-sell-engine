@@ -20,21 +20,30 @@ export function UploadModal({ onClose, onLoaded }: Props) {
   const [dragging, setDragging] = useState(false);
 
   function downloadTemplate() {
-    const motorData = [
-      ["Name", "Mobile", "Email", "Age", "Marital Status", "Car Value", "Is Bank Financed?"],
-      ["Ahmed Khan", "501234567", "ahmed.khan@email.com", 34, "Married", 85000, "Yes"],
-      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single", 120000, "Yes"],
+    const data = [
+      ["Name", "Mobile", "Email", "Age", "Marital Status", "Car Value", "Is Bank Financed?", "Salary Band", "Visa Category"],
+      ["Ahmed Khan",     "501234567", "ahmed.khan@email.com",     34, "Married", 85000,  "Yes", "4000 - 12000",    "Sponsored (Employer or Family)"],
+      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single",  120000, "Yes", "More than 12000", "Sponsored (Employer or Family)"],
+      ["Raj Patel",      "553456789", "raj.patel@email.com",      41, "Married", 350000, "No",  "More than 12000", "Investor / Partner"],
+      ["Maria Garcia",   "584567890", "maria.garcia@email.com",   26, "Single",  45000,  "Yes", "Below 4000",      "Sponsored (Employer or Family)"],
     ];
-    const healthData = [
-      ["Name", "Mobile", "Email", "Age", "Marital Status", "Salary Band", "Visa Category"],
-      ["Ahmed Khan", "501234567", "ahmed.khan@email.com", 34, "Married", "4000 - 12000", "Sponsored (Employer or Family)"],
-      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single", "More than 12000", "Sponsored (Employer or Family)"],
+
+    // Notes row at bottom so the user knows valid values
+    const notes = [
+      [],
+      ["--- Valid values ---"],
+      ["Marital Status:", "", "Married | Single | Divorced | Widowed"],
+      ["Is Bank Financed?:", "", "Yes | No"],
+      ["Salary Band:", "", "Below 4000 | 4000 - 12000 | More than 12000 | No Salary (dependent / Children) | No Salary Commission Only"],
+      ["Visa Category:", "", "Sponsored (Employer or Family) | Investor / Partner | Golden Visa | Self Employed / Freelancer"],
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(motorData), "Motor");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(healthData), "Health");
-    XLSX.writeFile(wb, "policyholder-template.xlsx");
+    const ws = XLSX.utils.aoa_to_sheet([...data, ...notes]);
+    // Set column widths
+    ws["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 28 }, { wch: 6 }, { wch: 16 }, { wch: 12 }, { wch: 18 }, { wch: 30 }, { wch: 34 }];
+    XLSX.utils.book_append_sheet(wb, ws, "Leads");
+    XLSX.writeFile(wb, "leads-template.xlsx");
   }
 
   async function handleFile(file: File) {
@@ -49,13 +58,13 @@ export function UploadModal({ onClose, onLoaded }: Props) {
 
       if (policyholders.length === 0) {
         setStatus("error");
-        setMessage('No matching records found. Make sure the file has "Motor" and "Health" sheets with matching email addresses.');
+        setMessage("No records could be scored. Download the template to check the required column names and valid field values.");
         return;
       }
 
       setWarnings(warnings);
       setStatus("success");
-      setMessage(`${policyholders.length} policyholders loaded and scored.`);
+      setMessage(`${policyholders.length} lead${policyholders.length === 1 ? "" : "s"} loaded and scored.`);
       setTimeout(() => {
         onLoaded(policyholders);
         onClose();
@@ -87,8 +96,7 @@ export function UploadModal({ onClose, onLoaded }: Props) {
         </div>
 
         <p className={styles.hint}>
-          Upload a workbook with a <strong>Motor</strong> sheet and a <strong>Health</strong> sheet.
-          Records are matched by email — customers must appear in both sheets to be scored.
+          Upload a single Excel sheet with all lead columns. Download the template below to see the exact format and valid field values.
         </p>
 
         <button className={styles.templateBtn} onClick={downloadTemplate}>

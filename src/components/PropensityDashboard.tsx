@@ -169,7 +169,6 @@ function PropensityCell({ score }: { score: number }) {
       <div className={styles.barTrack}>
         <div className={styles.barFill} style={{ width: `${score}%`, background: TIER_VAR[tier] }} />
       </div>
-      <span className={`${styles.tierBadge} ${TIER_CLASS[tier]}`}>{tier}</span>
     </div>
   );
 }
