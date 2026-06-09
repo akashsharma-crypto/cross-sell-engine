@@ -22,28 +22,36 @@ export function UploadModal({ onClose, onLoaded }: Props) {
   function downloadTemplate() {
     // Columns marked (optional) can be left blank — Motor leads won't have Salary Band / Visa Category;
     // Health leads won't have Car Value / Is Bank Financed?
+    // Lead Type column tells the system which scoring model to use.
+    // Valid Lead Type values: Motor | Health | Both
     const data = [
-      ["Name", "Mobile", "Email", "Age", "Marital Status", "Car Value (optional)", "Is Bank Financed? (optional)", "Salary Band (optional)", "Visa Category (optional)"],
-      ["Ahmed Khan (Motor)",    "501234567", "ahmed.khan@email.com",     34, "Married", 85000,  "Yes", "",                "",],
-      ["Sarah Williams (Health)","522345678", "sarah.williams@email.com", 29, "Single",  "",     "",    "More than 12000", "Sponsored (Employer or Family)"],
-      ["Raj Patel (Both)",      "553456789", "raj.patel@email.com",      41, "Married", 350000, "No",  "More than 12000", "Investor / Partner"],
-      ["Maria Garcia (Motor)",  "584567890", "maria.garcia@email.com",   26, "Single",  45000,  "Yes", "",                ""],
+      ["Name", "Mobile", "Email", "Age", "Marital Status", "Lead Type", "Car Value", "Is Bank Financed?", "Salary Band", "Visa Category"],
+      ["Ahmed Khan",     "501234567", "ahmed.khan@email.com",     34, "Married", "Motor",  85000,  "Yes", "",                ""],
+      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single",  "Health", "",     "",    "More than 12000", "Sponsored (Employer or Family)"],
+      ["Raj Patel",      "553456789", "raj.patel@email.com",      41, "Married", "Both",   350000, "No",  "More than 12000", "Investor / Partner"],
+      ["Maria Garcia",   "584567890", "maria.garcia@email.com",   26, "Single",  "Motor",  45000,  "Yes", "",                ""],
     ];
 
     // Notes row at bottom so the user knows valid values
     const notes = [
       [],
       ["--- Valid values ---"],
+      ["Lead Type:", "", "Motor | Health | Both"],
       ["Marital Status:", "", "Married | Single | Divorced | Widowed"],
       ["Is Bank Financed?:", "", "Yes | No"],
       ["Salary Band:", "", "Below 4000 | 4000 - 12000 | More than 12000 | No Salary (dependent / Children) | No Salary Commission Only"],
       ["Visa Category:", "", "Sponsored (Employer or Family) | Investor / Partner | Golden Visa | Self Employed / Freelancer"],
+      [],
+      ["--- Notes ---"],
+      ["Motor leads:", "", "Fill Car Value + Is Bank Financed. Leave Salary Band + Visa Category blank."],
+      ["Health leads:", "", "Fill Salary Band + Visa Category. Leave Car Value + Is Bank Financed blank."],
+      ["Both:", "", "Fill all columns."],
     ];
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([...data, ...notes]);
     // Set column widths
-    ws["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 28 }, { wch: 6 }, { wch: 16 }, { wch: 12 }, { wch: 18 }, { wch: 30 }, { wch: 34 }];
+    ws["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 28 }, { wch: 6 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 30 }, { wch: 34 }];
     XLSX.utils.book_append_sheet(wb, ws, "Leads");
     XLSX.writeFile(wb, "leads-template.xlsx");
   }

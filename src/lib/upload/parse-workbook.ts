@@ -41,13 +41,20 @@ export function parseWorkbook(buffer: ArrayBuffer): ParseResult {
       warnings.push(`Skipped a row — missing name or email.`);
       continue;
     }
-    // Age and Marital Status are always required
     if (age === null || maritalStatus === null) {
       warnings.push(`Skipped "${name}" — Age and Marital Status are required.`);
       continue;
     }
-    // Car Value, Is Bank Financed?, Salary Band, Visa Category are optional —
-    // Motor leads may not have salary/visa; Health leads may not have car data.
+
+    // Lead Type column is optional — engine auto-detects from available fields.
+    // If provided, validate it matches the data and warn if inconsistent.
+    const leadTypeRaw = str(row["Lead Type"] ?? row["lead_type"] ?? row["LeadType"] ?? "").toLowerCase();
+    if (leadTypeRaw === "motor" && (salaryBand !== null || visaCategory !== null)) {
+      warnings.push(`"${name}" is marked Motor but has Health data — scored as Both.`);
+    }
+    if (leadTypeRaw === "health" && (carValue !== null || isBankFinanced !== null)) {
+      warnings.push(`"${name}" is marked Health but has Motor data — scored as Both.`);
+    }
 
     policyholders.push({ name, mobile, email, age, maritalStatus, carValue, isBankFinanced, salaryBand, visaCategory });
   }

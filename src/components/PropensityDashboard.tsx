@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Policyholder } from "@/types/policyholder";
-import { scorePolicyholder, tierOf, type Bucket, type LeadType, type ScoreComponent, type ScoredPolicyholder } from "@/lib/scoring/propensity-engine";
+import { scorePolicyholder, tierOf, type LeadType, type ScoreComponent, type ScoredPolicyholder } from "@/lib/scoring/propensity-engine";
 import styles from "./PropensityDashboard.module.css";
 
 interface Props {
@@ -10,7 +10,6 @@ interface Props {
 }
 
 type SortKey = "life" | "savings";
-type LogEntry = { name: string; category: string; bucketName: string };
 
 const BUCKET_NAMES = ["Family Protection", "Debt Protection", "Retirement", "Wealth Accumulation", "Education"];
 
@@ -31,7 +30,6 @@ export function PropensityDashboard({ policyholders }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("life");
   const [bucketFilter, setBucketFilter] = useState<string>("all");
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
-  const [log, setLog] = useState<LogEntry[]>([]);
 
   const scored: ScoredPolicyholder[] = useMemo(() => policyholders.map(scorePolicyholder), [policyholders]);
 
@@ -52,10 +50,6 @@ export function PropensityDashboard({ policyholders }: Props) {
     }
     return [...list].sort((a, b) => (sortKey === "life" ? b.lifeScore - a.lifeScore : b.savingsScore - a.savingsScore));
   }, [scored, bucketFilter, sortKey]);
-
-  function simulateClick(person: Policyholder, bucket: Bucket) {
-    setLog((prev) => [{ name: person.name, category: bucket.category, bucketName: bucket.name }, ...prev]);
-  }
 
   return (
     <div>
@@ -112,7 +106,6 @@ export function PropensityDashboard({ policyholders }: Props) {
                   row={row}
                   isExpanded={isExpanded}
                   onToggle={() => setExpandedEmail(isExpanded ? null : row.person.email)}
-                  onSimulateClick={simulateClick}
                 />
               );
             })}
@@ -127,27 +120,6 @@ export function PropensityDashboard({ policyholders }: Props) {
         </table>
       </div>
 
-      <section className={styles.logSection}>
-        <h2>IMCRM Activity Log</h2>
-        {log.length === 0 ? (
-          <p className={styles.logEmpty}>No campaign clicks recorded yet.</p>
-        ) : (
-          <ul className={styles.logList}>
-            {log.map((entry, i) => (
-              <li key={i}>
-                <span className={styles.logDot} />
-                <span>
-                  <strong>{entry.name}</strong> clicked the &ldquo;{entry.bucketName}&rdquo; campaign link — lead created in IMCRM under{" "}
-                  <strong>
-                    {entry.category} &rarr; {entry.bucketName}
-                  </strong>
-                  .
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
@@ -177,10 +149,9 @@ interface RowGroupProps {
   row: ScoredPolicyholder;
   isExpanded: boolean;
   onToggle: () => void;
-  onSimulateClick: (person: Policyholder, bucket: Bucket) => void;
 }
 
-function RowGroup({ row, isExpanded, onToggle, onSimulateClick }: RowGroupProps) {
+function RowGroup({ row, isExpanded, onToggle }: RowGroupProps) {
   const p = row.person;
   return (
     <>
@@ -220,7 +191,7 @@ function RowGroup({ row, isExpanded, onToggle, onSimulateClick }: RowGroupProps)
       {isExpanded && (
         <tr className={styles.detailRow}>
           <td colSpan={5}>
-            <DetailPanel row={row} onSimulateClick={onSimulateClick} />
+            <DetailPanel row={row} />
           </td>
         </tr>
       )}
@@ -238,7 +209,9 @@ function ReasonList({ components, kind }: { components: ScoreComponent[]; kind: 
       {contributing.map((c) => (
         <li key={c.key}>
           <span className={styles.reasonDot} style={{ background: kind === "life" ? "var(--brand-blue)" : "var(--green)" }} />
-          <span className={styles.reasonText}>{c.note}</span>
+          <span className={styles.reasonText}>
+            <strong>{c.label}:</strong> {c.note}
+          </span>
           <span className={styles.reasonPts}>+{c.points}</span>
         </li>
       ))}
@@ -246,7 +219,7 @@ function ReasonList({ components, kind }: { components: ScoreComponent[]; kind: 
   );
 }
 
-function DetailPanel({ row, onSimulateClick }: { row: ScoredPolicyholder; onSimulateClick: RowGroupProps["onSimulateClick"] }) {
+function DetailPanel({ row }: { row: ScoredPolicyholder }) {
   const p = row.person;
   const lifeTier = tierOf(row.lifeScore);
   const savingsTier = tierOf(row.savingsScore);
@@ -255,7 +228,7 @@ function DetailPanel({ row, onSimulateClick }: { row: ScoredPolicyholder; onSimu
     <div className={styles.detail}>
       <div className={styles.detailGrid}>
         <div>
-          <h4>Policyholder profile</h4>
+          <h4>Profile</h4>
           <ul className={styles.profileList}>
             <ProfileRow k="Lead type" v={row.leadType} />
             <ProfileRow k="Mobile" v={`+971 ${p.mobile}`} />
@@ -269,39 +242,26 @@ function DetailPanel({ row, onSimulateClick }: { row: ScoredPolicyholder; onSimu
           </ul>
         </div>
         <div>
-          <h4>
-            Why this Life score &mdash; {row.lifeScore}/100 &middot; {lifeTier}
-          </h4>
+          <h4>Life score: {row.lifeScore}/100 ({lifeTier})</h4>
           <ReasonList components={row.life} kind="life" />
         </div>
         <div>
-          <h4>
-            Why this Savings score &mdash; {row.savingsScore}/100 &middot; {savingsTier}
-          </h4>
+          <h4>Savings score: {row.savingsScore}/100 ({savingsTier})</h4>
           <ReasonList components={row.savings} kind="savings" />
         </div>
       </div>
 
       <h4 style={{ marginTop: "1.25rem" }}>Recommended campaigns</h4>
       {row.buckets.length === 0 ? (
-        <p className={styles.muted}>Neither propensity score clears the routing threshold (50/100) — no campaign recommended at this time.</p>
+        <p className={styles.muted}>Score below threshold — no campaign recommended yet.</p>
       ) : (
-        row.buckets.map((bucket) => (
-          <div className={styles.actionCard} key={bucket.name}>
-            <div className={styles.actionHead}>
-              <span className={`${styles.tag} ${bucket.category === "Life" ? styles.tagLife : styles.tagSavings}`}>
-                {bucket.category} &middot; {bucket.name}
-              </span>
-            </div>
-            <p>
-              {bucket.reason} Routes to the &ldquo;{bucket.name}&rdquo; email campaign; a click creates a {bucket.category} lead in IMCRM
-              tagged &ldquo;{bucket.name}&rdquo;.
-            </p>
-            <button className={styles.btnQuiet} onClick={(e) => { e.stopPropagation(); onSimulateClick(p, bucket); }}>
-              Simulate campaign click &rarr; create IMCRM lead
-            </button>
-          </div>
-        ))
+        <div className={styles.bucketTags} style={{ marginTop: "0.5rem" }}>
+          {row.buckets.map((bucket) => (
+            <span key={bucket.name} className={`${styles.tag} ${bucket.category === "Life" ? styles.tagLife : styles.tagSavings}`}>
+              {bucket.category} · {bucket.name}
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );
