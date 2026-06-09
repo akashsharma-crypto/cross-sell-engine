@@ -278,7 +278,7 @@ function ProfileRow({ k, v }: { k: string; v: string }) {
 
 function LeadTypeBadge({ type }: { type: LeadType }) {
   return (
-    <span className={`${styles.leadTypeBadge} ${type === "Motor" ? styles.leadMotor : type === "Health" ? styles.leadHealth : styles.leadFull}`}>
+    <span className={`${styles.leadTypeBadge} ${type === "Motor" ? styles.leadMotor : type === "Health" ? styles.leadHealth : styles.leadBoth}`}>
       {type}
     </span>
   );

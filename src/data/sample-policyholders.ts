@@ -20,10 +20,4 @@ export const samplePolicyholders: Policyholder[] = [
   { name: "Sophia Johnson",  mobile: "586677889", email: "sophia.johnson@email.com",  age: 22, maritalStatus: "Single",   carValue: null, isBankFinanced: null, salaryBand: "No Salary (dependent / Children)", visaCategory: "Sponsored (Employer or Family)" },
   { name: "Zainab Ahmed",    mobile: "581011223", email: "zainab.ahmed@email.com",    age: 19, maritalStatus: "Single",   carValue: null, isBankFinanced: null, salaryBand: "No Salary (dependent / Children)", visaCategory: "Sponsored (Employer or Family)" },
 
-  // Both — full data available
-  { name: "John Smith",      mobile: "557890123", email: "john.smith@email.com",      age: 45, maritalStatus: "Married",  carValue: 650000, isBankFinanced: false, salaryBand: "More than 12000", visaCategory: "Golden Visa" },
-  { name: "Noor Abdullah",   mobile: "582233445", email: "noor.abdullah@email.com",   age: 42, maritalStatus: "Married",  carValue: 280000, isBankFinanced: false, salaryBand: "More than 12000", visaCategory: "Golden Visa" },
-  { name: "Hassan Mahmood",  mobile: "555566778", email: "hassan.mahmood@email.com",  age: 51, maritalStatus: "Married",  carValue: 420000, isBankFinanced: false, salaryBand: "More than 12000", visaCategory: "Golden Visa" },
-  { name: "Chloe Martin",    mobile: "528899001", email: "chloe.martin@email.com",    age: 30, maritalStatus: "Single",   carValue: 180000, isBankFinanced: true,  salaryBand: "More than 12000", visaCategory: "Investor / Partner" },
-  { name: "Omar Hassan",     mobile: "505678901", email: "omar.hassan@email.com",     age: 38, maritalStatus: "Married",  carValue: 95000,  isBankFinanced: true,  salaryBand: "4000 - 12000",    visaCategory: "Sponsored (Employer or Family)" },
 ];

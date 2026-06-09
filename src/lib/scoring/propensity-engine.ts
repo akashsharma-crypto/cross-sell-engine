@@ -9,7 +9,7 @@ export interface ScoreComponent {
 }
 
 export type BucketCategory = "Life" | "Savings";
-export type LeadType = "Motor" | "Health" | "Full";
+export type LeadType = "Motor" | "Health" | "Both";
 
 export interface Bucket {
   category: BucketCategory;
@@ -36,7 +36,7 @@ const BUCKET_THRESHOLD = 50;
 function detectLeadType(p: Policyholder): LeadType {
   const hasMotor = p.carValue !== null || p.isBankFinanced !== null;
   const hasHealth = p.salaryBand !== null || p.visaCategory !== null;
-  if (hasMotor && hasHealth) return "Full";
+  if (hasMotor && hasHealth) return "Both";
   if (hasMotor) return "Motor";
   return "Health";
 }
@@ -247,7 +247,7 @@ function buildLifeComponents(p: Policyholder, leadType: LeadType): ScoreComponen
   const shared = [ageLifeComponent(p.age), maritalLifeComponent(p.maritalStatus)];
   if (leadType === "Motor") return [...shared, carDebtLifeComponent(p.carValue, p.isBankFinanced)];
   if (leadType === "Health") return [...shared, salaryLifeComponent(p.salaryBand), visaLifeComponent(p.visaCategory)];
-  // Full — all signals
+  // Both — all signals
   return [...shared, carDebtLifeComponent(p.carValue, p.isBankFinanced), salaryLifeComponent(p.salaryBand), visaLifeComponent(p.visaCategory)];
 }
 
@@ -255,7 +255,7 @@ function buildSavingsComponents(p: Policyholder, leadType: LeadType): ScoreCompo
   const shared = [ageSavingsComponent(p.age), maritalSavingsComponent(p.maritalStatus)];
   if (leadType === "Motor") return [...shared, carWealthSavingsComponent(p.carValue, p.isBankFinanced)];
   if (leadType === "Health") return [...shared, salarySavingsComponent(p.salaryBand), visaSavingsComponent(p.visaCategory)];
-  // Full — all signals
+  // Both — all signals
   return [...shared, carWealthSavingsComponent(p.carValue, p.isBankFinanced), salarySavingsComponent(p.salaryBand), visaSavingsComponent(p.visaCategory)];
 }
 
