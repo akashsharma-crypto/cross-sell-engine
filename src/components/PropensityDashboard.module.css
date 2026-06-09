@@ -37,6 +37,7 @@
 .leadMotor  { color: #7a5c1e; background: #fdf3e0; border-color: #f0d9a8; }
 .leadHealth { color: #1a5c40; background: #e4f5ed; border-color: #b6e0cb; }
 .leadBoth   { color: #1c4f87; background: #e4eefc; border-color: #b3cff0; }
+.leadHome   { color: #6b3fa0; background: #f3edfb; border-color: #d9c5f0; }
 .chevronCell { text-align: right; }
 .chevron { color: var(--slate); font-size: 0.7rem; }
 .emptyState { text-align: center; padding: 1.5rem; color: var(--low); }

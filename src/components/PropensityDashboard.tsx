@@ -233,12 +233,19 @@ function DetailPanel({ row }: { row: ScoredPolicyholder }) {
             <ProfileRow k="Lead type" v={row.leadType} />
             <ProfileRow k="Mobile" v={`+971 ${p.mobile}`} />
             <ProfileRow k="Email" v={p.email} />
-            <ProfileRow k="Age" v={String(p.age)} />
-            <ProfileRow k="Marital status" v={p.maritalStatus} />
-            <ProfileRow k="Car value" v={p.carValue !== null ? `AED ${p.carValue.toLocaleString()}` : "—"} />
-            <ProfileRow k="Bank financed" v={p.isBankFinanced !== null ? (p.isBankFinanced ? "Yes" : "No") : "—"} />
-            <ProfileRow k="Salary band" v={p.salaryBand ?? "—"} />
-            <ProfileRow k="Visa category" v={p.visaCategory ?? "—"} />
+            {p.age !== null && <ProfileRow k="Age" v={String(p.age)} />}
+            {p.maritalStatus !== null && <ProfileRow k="Marital status" v={p.maritalStatus} />}
+            {p.carValue !== null && <ProfileRow k="Car value" v={`AED ${p.carValue.toLocaleString()}`} />}
+            {p.isBankFinanced !== null && <ProfileRow k="Bank financed" v={p.isBankFinanced ? "Yes" : "No"} />}
+            {p.salaryBand !== null && <ProfileRow k="Salary band" v={p.salaryBand} />}
+            {p.visaCategory !== null && <ProfileRow k="Visa category" v={p.visaCategory} />}
+            {p.ownershipType !== null && <ProfileRow k="Ownership" v={p.ownershipType} />}
+            {p.propertyType !== null && <ProfileRow k="Property type" v={p.propertyType} />}
+            {p.locationArea !== null && <ProfileRow k="Location" v={p.locationArea} />}
+            {p.coverageType !== null && <ProfileRow k="Coverage type" v={p.coverageType} />}
+            {p.contentsValue !== null && <ProfileRow k="Contents value" v={p.contentsValue} />}
+            {p.personalBelongingsValue !== null && <ProfileRow k="Belongings value" v={p.personalBelongingsValue} />}
+            {p.claimsHistory !== null && <ProfileRow k="Claims history" v={p.claimsHistory ? "Yes" : "No"} />}
           </ul>
         </div>
         <div>
@@ -278,7 +285,7 @@ function ProfileRow({ k, v }: { k: string; v: string }) {
 
 function LeadTypeBadge({ type }: { type: LeadType }) {
   return (
-    <span className={`${styles.leadTypeBadge} ${type === "Motor" ? styles.leadMotor : type === "Health" ? styles.leadHealth : styles.leadBoth}`}>
+    <span className={`${styles.leadTypeBadge} ${type === "Motor" ? styles.leadMotor : type === "Health" ? styles.leadHealth : type === "Home" ? styles.leadHome : styles.leadBoth}`}>
       {type}
     </span>
   );

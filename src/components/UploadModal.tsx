@@ -43,9 +43,10 @@ export function UploadModal({ onClose, onLoaded }: Props) {
       ["Visa Category:", "", "Sponsored (Employer or Family) | Investor / Partner | Golden Visa | Self Employed / Freelancer"],
       [],
       ["--- Notes ---"],
-      ["Motor leads:", "", "Fill Car Value + Is Bank Financed. Leave Salary Band + Visa Category blank."],
-      ["Health leads:", "", "Fill Salary Band + Visa Category. Leave Car Value + Is Bank Financed blank."],
-      ["Both:", "", "Fill all columns."],
+      ["Motor leads:", "", "Fill Age, Marital Status, Car Value, Is Bank Financed. Leave Health + Home fields blank."],
+      ["Health leads:", "", "Fill Age, Marital Status, Salary Band, Visa Category. Leave Motor + Home fields blank."],
+      ["Both:", "", "Fill Age, Marital Status + all Motor and Health fields."],
+      ["Home leads:", "", "Fill Ownership Type, Property Type, Claims History, Coverage Type, Contents Value, Personal Belongings Value, Location Area. Age + Marital Status not required."],
     ];
 
     const wb = XLSX.utils.book_new();
