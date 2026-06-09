@@ -1,8 +1,15 @@
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
-.stat { border: 1px solid var(--line); border-radius: 10px; padding: 0.9rem 1rem; background: #fff; }
+.stat { border: 1px solid var(--line); border-radius: 10px; padding: 0.9rem 1rem; background: #fff; position: relative; }
+.statClickable { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.statClickable:hover { border-color: var(--slate); box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+.statActive { border-color: var(--ink) !important; box-shadow: 0 0 0 1px var(--ink); }
 .statNum { font-size: 1.5rem; font-weight: 700; line-height: 1; }
 .statLabel { font-size: 0.78rem; color: var(--slate); margin-top: 0.3rem; }
-.statLife .statNum { color: var(--brand-blue); }
+.statActiveHint { font-size: 0.68rem; color: var(--low); margin-top: 0.35rem; }
+.statMotor  .statNum { color: #7a5c1e; }
+.statHealth .statNum { color: var(--green); }
+.statHome   .statNum { color: #6b3fa0; }
+.statLife   .statNum { color: var(--brand-blue); }
 .statSavings .statNum { color: var(--green); }
 
 .controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }

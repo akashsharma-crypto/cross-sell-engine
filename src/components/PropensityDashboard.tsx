@@ -29,35 +29,38 @@ const TIER_CLASS: Record<string, string> = {
 export function PropensityDashboard({ policyholders }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("life");
   const [bucketFilter, setBucketFilter] = useState<string>("all");
+  const [leadTypeFilter, setLeadTypeFilter] = useState<LeadType | "all">("all");
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
 
   const scored: ScoredPolicyholder[] = useMemo(() => policyholders.map(scorePolicyholder), [policyholders]);
 
-  const stats = useMemo(
-    () => ({
-      total: scored.length,
-      lifeHigh: scored.filter((r) => r.lifeScore >= 55).length,
-      savingsHigh: scored.filter((r) => r.savingsScore >= 55).length,
-      multi: scored.filter((r) => r.buckets.length >= 2).length,
-    }),
-    [scored]
-  );
+  const stats = useMemo(() => ({
+    total:  scored.length,
+    motor:  scored.filter((r) => r.leadType === "Motor").length,
+    health: scored.filter((r) => r.leadType === "Health").length,
+    home:   scored.filter((r) => r.leadType === "Home").length,
+    both:   scored.filter((r) => r.leadType === "Both").length,
+  }), [scored]);
 
   const rows = useMemo(() => {
     let list = scored;
-    if (bucketFilter !== "all") {
-      list = list.filter((r) => r.buckets.some((b) => b.name === bucketFilter));
-    }
-    return [...list].sort((a, b) => (sortKey === "life" ? b.lifeScore - a.lifeScore : b.savingsScore - a.savingsScore));
-  }, [scored, bucketFilter, sortKey]);
+    if (leadTypeFilter !== "all") list = list.filter((r) => r.leadType === leadTypeFilter);
+    if (bucketFilter !== "all")   list = list.filter((r) => r.buckets.some((b) => b.name === bucketFilter));
+    return [...list].sort((a, b) => sortKey === "life" ? b.lifeScore - a.lifeScore : b.savingsScore - a.savingsScore);
+  }, [scored, leadTypeFilter, bucketFilter, sortKey]);
+
+  function toggleLeadType(type: LeadType) {
+    setLeadTypeFilter((prev) => prev === type ? "all" : type);
+    setExpandedEmail(null);
+  }
 
   return (
     <div>
       <div className={styles.stats}>
-        <Stat num={stats.total} label="Policyholders scored" />
-        <Stat num={stats.lifeHigh} label="High+ Life propensity" accent="life" />
-        <Stat num={stats.savingsHigh} label="High+ Savings propensity" accent="savings" />
-        <Stat num={stats.multi} label="Eligible for 2+ campaigns" />
+        <Stat num={stats.total}  label="Total leads"    active={leadTypeFilter === "all"}    onClick={() => setLeadTypeFilter("all")} />
+        <Stat num={stats.motor}  label="Motor leads"    active={leadTypeFilter === "Motor"}  onClick={() => toggleLeadType("Motor")}  accent="motor" />
+        <Stat num={stats.health} label="Health leads"   active={leadTypeFilter === "Health"} onClick={() => toggleLeadType("Health")} accent="health" />
+        <Stat num={stats.home}   label="Home leads"     active={leadTypeFilter === "Home"}   onClick={() => toggleLeadType("Home")}   accent="home" />
       </div>
 
       <div className={styles.controls}>
@@ -124,11 +127,26 @@ export function PropensityDashboard({ policyholders }: Props) {
   );
 }
 
-function Stat({ num, label, accent }: { num: number; label: string; accent?: "life" | "savings" }) {
+function Stat({ num, label, accent, active, onClick }: {
+  num: number; label: string; active?: boolean; onClick?: () => void;
+  accent?: "motor" | "health" | "home" | "life" | "savings";
+}) {
+  const accentClass =
+    accent === "motor"   ? styles.statMotor :
+    accent === "health"  ? styles.statHealth :
+    accent === "home"    ? styles.statHome :
+    accent === "life"    ? styles.statLife :
+    accent === "savings" ? styles.statSavings : "";
   return (
-    <div className={`${styles.stat} ${accent === "life" ? styles.statLife : accent === "savings" ? styles.statSavings : ""}`}>
+    <div
+      className={`${styles.stat} ${accentClass} ${active ? styles.statActive : ""} ${onClick ? styles.statClickable : ""}`}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
       <div className={styles.statNum}>{num}</div>
       <div className={styles.statLabel}>{label}</div>
+      {active && onClick && <div className={styles.statActiveHint}>click to clear</div>}
     </div>
   );
 }
