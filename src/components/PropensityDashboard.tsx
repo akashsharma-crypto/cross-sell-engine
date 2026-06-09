@@ -258,10 +258,10 @@ function DetailPanel({ row, onSimulateClick }: { row: ScoredPolicyholder; onSimu
             <ProfileRow k="Email" v={p.email} />
             <ProfileRow k="Age" v={String(p.age)} />
             <ProfileRow k="Marital status" v={p.maritalStatus} />
-            <ProfileRow k="Car value" v={`AED ${p.carValue.toLocaleString()}`} />
-            <ProfileRow k="Bank financed" v={p.isBankFinanced ? "Yes" : "No"} />
-            <ProfileRow k="Salary band" v={p.salaryBand} />
-            <ProfileRow k="Visa category" v={p.visaCategory} />
+            <ProfileRow k="Car value" v={p.carValue !== null ? `AED ${p.carValue.toLocaleString()}` : "—"} />
+            <ProfileRow k="Bank financed" v={p.isBankFinanced !== null ? (p.isBankFinanced ? "Yes" : "No") : "—"} />
+            <ProfileRow k="Salary band" v={p.salaryBand ?? "—"} />
+            <ProfileRow k="Visa category" v={p.visaCategory ?? "—"} />
           </ul>
         </div>
         <div>

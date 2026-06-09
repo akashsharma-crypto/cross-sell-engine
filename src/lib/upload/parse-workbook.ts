@@ -32,19 +32,22 @@ export function parseWorkbook(buffer: ArrayBuffer): ParseResult {
     const email = normalizeEmail(row["Email"] ?? row["email"]);
     const age = toNumber(row["Age"] ?? row["age"]);
     const maritalStatus = parseMaritalStatus(row["Marital Status"] ?? row["marital_status"] ?? row["MaritalStatus"]);
-    const carValue = toNumber(row["Car Value"] ?? row["car_value"] ?? row["CarValue"] ?? row["Car value"]);
-    const isBankFinanced = parseYesNo(row["Is Bank Financed?"] ?? row["Is Bank Financed"] ?? row["Bank Financed"] ?? row["isBankFinanced"]);
-    const salaryBand = parseSalaryBand(row["Salary Band"] ?? row["salary_band"] ?? row["SalaryBand"] ?? row["Salary band"]);
-    const visaCategory = parseVisaCategory(row["Visa Category"] ?? row["visa_category"] ?? row["VisaCategory"] ?? row["Visa category"]);
+    const carValue = toNumber(row["Car Value"] ?? row["Car Value (optional)"] ?? row["car_value"] ?? row["CarValue"] ?? row["Car value"]);
+    const isBankFinanced = parseYesNo(row["Is Bank Financed?"] ?? row["Is Bank Financed? (optional)"] ?? row["Is Bank Financed"] ?? row["Bank Financed"] ?? row["isBankFinanced"]);
+    const salaryBand = parseSalaryBand(row["Salary Band"] ?? row["Salary Band (optional)"] ?? row["salary_band"] ?? row["SalaryBand"] ?? row["Salary band"]);
+    const visaCategory = parseVisaCategory(row["Visa Category"] ?? row["Visa Category (optional)"] ?? row["visa_category"] ?? row["VisaCategory"] ?? row["Visa category"]);
 
     if (!name || !email) {
       warnings.push(`Skipped a row — missing name or email.`);
       continue;
     }
-    if (age === null || maritalStatus === null || carValue === null || isBankFinanced === null || salaryBand === null || visaCategory === null) {
-      warnings.push(`Skipped "${name}" — one or more required fields could not be read. Check: Age, Marital Status, Car Value, Is Bank Financed?, Salary Band, Visa Category.`);
+    // Age and Marital Status are always required
+    if (age === null || maritalStatus === null) {
+      warnings.push(`Skipped "${name}" — Age and Marital Status are required.`);
       continue;
     }
+    // Car Value, Is Bank Financed?, Salary Band, Visa Category are optional —
+    // Motor leads may not have salary/visa; Health leads may not have car data.
 
     policyholders.push({ name, mobile, email, age, maritalStatus, carValue, isBankFinanced, salaryBand, visaCategory });
   }

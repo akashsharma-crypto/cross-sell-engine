@@ -20,12 +20,14 @@ export function UploadModal({ onClose, onLoaded }: Props) {
   const [dragging, setDragging] = useState(false);
 
   function downloadTemplate() {
+    // Columns marked (optional) can be left blank — Motor leads won't have Salary Band / Visa Category;
+    // Health leads won't have Car Value / Is Bank Financed?
     const data = [
-      ["Name", "Mobile", "Email", "Age", "Marital Status", "Car Value", "Is Bank Financed?", "Salary Band", "Visa Category"],
-      ["Ahmed Khan",     "501234567", "ahmed.khan@email.com",     34, "Married", 85000,  "Yes", "4000 - 12000",    "Sponsored (Employer or Family)"],
-      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single",  120000, "Yes", "More than 12000", "Sponsored (Employer or Family)"],
-      ["Raj Patel",      "553456789", "raj.patel@email.com",      41, "Married", 350000, "No",  "More than 12000", "Investor / Partner"],
-      ["Maria Garcia",   "584567890", "maria.garcia@email.com",   26, "Single",  45000,  "Yes", "Below 4000",      "Sponsored (Employer or Family)"],
+      ["Name", "Mobile", "Email", "Age", "Marital Status", "Car Value (optional)", "Is Bank Financed? (optional)", "Salary Band (optional)", "Visa Category (optional)"],
+      ["Ahmed Khan (Motor)",    "501234567", "ahmed.khan@email.com",     34, "Married", 85000,  "Yes", "",                "",],
+      ["Sarah Williams (Health)","522345678", "sarah.williams@email.com", 29, "Single",  "",     "",    "More than 12000", "Sponsored (Employer or Family)"],
+      ["Raj Patel (Both)",      "553456789", "raj.patel@email.com",      41, "Married", 350000, "No",  "More than 12000", "Investor / Partner"],
+      ["Maria Garcia (Motor)",  "584567890", "maria.garcia@email.com",   26, "Single",  45000,  "Yes", "",                ""],
     ];
 
     // Notes row at bottom so the user knows valid values

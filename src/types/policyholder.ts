@@ -1,9 +1,3 @@
-/**
- * Domain types for the propensity engine — matches the columns in the
- * Motor and Health policyholder Excel exports (merged by name/email into
- * one record per customer before scoring).
- */
-
 export type MaritalStatus = "Married" | "Single" | "Divorced" | "Widowed";
 
 export type SalaryBand =
@@ -19,37 +13,20 @@ export type VisaCategory =
   | "Golden Visa"
   | "Self Employed / Freelancer";
 
-/** A single merged policyholder record, ready for scoring. */
+/**
+ * A single policyholder record ready for scoring.
+ * carValue, isBankFinanced, salaryBand, visaCategory are nullable —
+ * Motor-only leads won't have salary/visa; Health-only leads won't have car data.
+ * The scoring engine treats null as a neutral signal (0 points for that component).
+ */
 export interface Policyholder {
   name: string;
   mobile: string;
   email: string;
   age: number;
   maritalStatus: MaritalStatus;
-  carValue: number;
-  isBankFinanced: boolean;
-  salaryBand: SalaryBand;
-  visaCategory: VisaCategory;
-}
-
-/** Raw row shape as it appears in the uploaded Motor sheet. */
-export interface MotorRow {
-  Name: string;
-  Mobile: string | number;
-  Email: string;
-  Age: number;
-  "Marital Status": string;
-  "Car Value": number;
-  "Is Bank Financed?": string;
-}
-
-/** Raw row shape as it appears in the uploaded Health sheet. */
-export interface HealthRow {
-  Name: string;
-  Mobile: string | number;
-  Email: string;
-  Age: number;
-  "Marital Status": string;
-  "Salary Band": string;
-  "Visa Category": string;
+  carValue: number | null;
+  isBankFinanced: boolean | null;
+  salaryBand: SalaryBand | null;
+  visaCategory: VisaCategory | null;
 }

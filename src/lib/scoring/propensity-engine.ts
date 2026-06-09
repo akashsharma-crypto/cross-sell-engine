@@ -58,15 +58,23 @@ function lifeComponents(p: Policyholder): ScoreComponent[] {
 
   const dependencyRisk = !married ? 0 : primeAge ? 35 : 20;
 
+  // Null visaCategory → no visa signal (0 pts)
   let visaVulnerability = 0;
-  if (sponsored) visaVulnerability = married ? 20 : 8;
-  else if (freelancer) visaVulnerability = 10;
-  else if (wealthVisa) visaVulnerability = 5;
+  if (p.visaCategory !== null) {
+    if (sponsored) visaVulnerability = married ? 20 : 8;
+    else if (freelancer) visaVulnerability = 10;
+    else if (wealthVisa) visaVulnerability = 5;
+  }
 
+  // Null carValue / isBankFinanced → no debt signal (0 pts)
   let debtObligation = 0;
-  if (p.isBankFinanced) debtObligation = p.carValue > HIGH_VALUE_CAR ? 25 : 15;
+  if (p.isBankFinanced === true && p.carValue !== null) {
+    debtObligation = p.carValue > HIGH_VALUE_CAR ? 25 : 15;
+  }
 
-  const incomeReplacement = SALARY_RANK[p.salaryBand] === 2 ? 20 : SALARY_RANK[p.salaryBand] === 1 ? 10 : 0;
+  // Null salaryBand → no income signal (0 pts)
+  const salaryRank = p.salaryBand !== null ? (SALARY_RANK[p.salaryBand] ?? 0) : -1;
+  const incomeReplacement = salaryRank === 2 ? 20 : salaryRank === 1 ? 10 : 0;
 
   return [
     {
@@ -85,7 +93,9 @@ function lifeComponents(p: Policyholder): ScoreComponent[] {
       label: "Sponsorship vulnerability",
       points: visaVulnerability,
       max: 20,
-      note: sponsored && married
+      note: p.visaCategory === null
+        ? "Visa category not provided — signal not scored."
+        : sponsored && married
         ? "Family's UAE residency is sponsored by this person — loss of income jeopardises their status."
         : sponsored
         ? "On a sponsored visa — some dependency, but no family on record yet."
@@ -100,7 +110,9 @@ function lifeComponents(p: Policyholder): ScoreComponent[] {
       label: "Debt obligation (car financing)",
       points: debtObligation,
       max: 25,
-      note: p.isBankFinanced
+      note: p.carValue === null
+        ? "Car data not provided — debt signal not scored."
+        : p.isBankFinanced
         ? `Bank-financed vehicle (AED ${p.carValue.toLocaleString()}) — an outstanding loan that would fall to survivors.`
         : "No outstanding vehicle finance on record.",
     },
@@ -109,9 +121,11 @@ function lifeComponents(p: Policyholder): ScoreComponent[] {
       label: "Income to replace (salary band)",
       points: incomeReplacement,
       max: 20,
-      note: SALARY_RANK[p.salaryBand] === 2
+      note: p.salaryBand === null
+        ? "Salary band not provided — signal not scored."
+        : salaryRank === 2
         ? "Top salary band — largest income gap to cover for dependents."
-        : SALARY_RANK[p.salaryBand] === 1
+        : salaryRank === 1
         ? "Mid salary band — moderate income to replace."
         : "Limited standalone income to replace.",
     },
@@ -119,14 +133,16 @@ function lifeComponents(p: Policyholder): ScoreComponent[] {
 }
 
 function savingsComponents(p: Policyholder): ScoreComponent[] {
-  const highSalary = SALARY_RANK[p.salaryBand] === 2;
-  const midSalary = SALARY_RANK[p.salaryBand] === 1;
+  const salaryRank = p.salaryBand !== null ? (SALARY_RANK[p.salaryBand] ?? 0) : -1;
+  const highSalary = salaryRank === 2;
+  const midSalary = salaryRank === 1;
   const freelancer = p.visaCategory === "Self Employed / Freelancer";
   const golden = p.visaCategory === "Golden Visa";
   const investor = p.visaCategory === "Investor / Partner";
 
   let capacity = highSalary ? 25 : midSalary ? 12 : 0;
-  if (p.carValue > HIGH_VALUE_CAR && !p.isBankFinanced) capacity += 10;
+  // Only add asset bonus if car data is present
+  if (p.carValue !== null && p.carValue > HIGH_VALUE_CAR && p.isBankFinanced === false) capacity += 10;
 
   let horizon: number, horizonNote: string;
   if (p.age <= 35) {
@@ -154,7 +170,10 @@ function savingsComponents(p: Policyholder): ScoreComponent[] {
   }
 
   let commitment: number, commitmentNote: string;
-  if (golden) {
+  if (p.visaCategory === null) {
+    commitment = 0;
+    commitmentNote = "Visa category not provided — UAE commitment signal not scored.";
+  } else if (golden) {
     commitment = 15;
     commitmentNote = "Golden Visa — explicit long-term UAE residency; long-horizon plans make sense.";
   } else if (investor) {
@@ -174,9 +193,11 @@ function savingsComponents(p: Policyholder): ScoreComponent[] {
       label: "Capacity to save (income + assets)",
       points: capacity,
       max: 35,
-      note: highSalary
+      note: p.salaryBand === null
+        ? "Salary band not provided — capacity signal not scored."
+        : highSalary
         ? "Top salary band" +
-          (p.carValue > HIGH_VALUE_CAR && !p.isBankFinanced
+          (p.carValue !== null && p.carValue > HIGH_VALUE_CAR && p.isBankFinanced === false
             ? ", plus an unencumbered high-value asset — genuine disposable wealth."
             : " — meaningful disposable income.")
         : midSalary
