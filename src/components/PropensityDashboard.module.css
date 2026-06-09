@@ -30,8 +30,13 @@
 .table tbody tr:not(.detailRow):hover { background: #fafbfc; }
 .rowExpanded { background: var(--panel); }
 .table td { padding: 0.65rem 0.9rem; vertical-align: middle; }
+.nameRow { display: flex; align-items: center; gap: 0.45rem; }
 .nameCell .name { font-weight: 700; color: var(--ink); }
 .nameCell .contact { font-size: 0.76rem; color: var(--slate); margin-top: 0.1rem; }
+.leadTypeBadge { font-size: 0.66rem; font-weight: 700; padding: 0.12rem 0.45rem; border-radius: 999px; border: 1px solid; white-space: nowrap; letter-spacing: 0.03em; text-transform: uppercase; }
+.leadMotor  { color: #7a5c1e; background: #fdf3e0; border-color: #f0d9a8; }
+.leadHealth { color: #1a5c40; background: #e4f5ed; border-color: #b6e0cb; }
+.leadFull   { color: #1c4f87; background: #e4eefc; border-color: #b3cff0; }
 .chevronCell { text-align: right; }
 .chevron { color: var(--slate); font-size: 0.7rem; }
 .emptyState { text-align: center; padding: 1.5rem; color: var(--low); }

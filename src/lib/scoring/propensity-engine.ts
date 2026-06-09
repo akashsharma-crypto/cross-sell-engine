@@ -1,16 +1,5 @@
 import type { Policyholder } from "@/types/policyholder";
 
-/**
- * Propensity scoring engine.
- *
- * Each score (Life, Savings) is assembled from named, explainable components —
- * not flat single-field point grants — so the dominant component both explains
- * the score AND drives which campaign bucket the lead is routed to. This is the
- * rules-based MVP behind the "propensity score": it is intentionally structured
- * so a learned model can later replace the component functions without changing
- * the score contract (0-100 + named component breakdown).
- */
-
 export interface ScoreComponent {
   key: string;
   label: string;
@@ -20,6 +9,7 @@ export interface ScoreComponent {
 }
 
 export type BucketCategory = "Life" | "Savings";
+export type LeadType = "Motor" | "Health" | "Full";
 
 export interface Bucket {
   category: BucketCategory;
@@ -29,6 +19,7 @@ export interface Bucket {
 
 export interface ScoredPolicyholder {
   person: Policyholder;
+  leadType: LeadType;
   life: ScoreComponent[];
   savings: ScoreComponent[];
   lifeScore: number;
@@ -38,189 +29,239 @@ export interface ScoredPolicyholder {
 
 export type PropensityTier = "Low" | "Moderate" | "High" | "Very High";
 
-const SALARY_RANK: Record<string, number> = {
-  "Below 4000": 0,
-  "No Salary (dependent / Children)": 0,
-  "No Salary Commission Only": 0,
-  "4000 - 12000": 1,
-  "More than 12000": 2,
-};
-
-const HIGH_VALUE_CAR = 150_000;
 const BUCKET_THRESHOLD = 50;
 
-function lifeComponents(p: Policyholder): ScoreComponent[] {
-  const married = p.maritalStatus === "Married";
-  const primeAge = p.age > 30;
-  const sponsored = p.visaCategory === "Sponsored (Employer or Family)";
-  const freelancer = p.visaCategory === "Self Employed / Freelancer";
-  const wealthVisa = p.visaCategory === "Golden Visa" || p.visaCategory === "Investor / Partner";
+// ─── Lead type detection ──────────────────────────────────────────────────────
 
-  const dependencyRisk = !married ? 0 : primeAge ? 35 : 20;
-
-  // Null visaCategory → no visa signal (0 pts)
-  let visaVulnerability = 0;
-  if (p.visaCategory !== null) {
-    if (sponsored) visaVulnerability = married ? 20 : 8;
-    else if (freelancer) visaVulnerability = 10;
-    else if (wealthVisa) visaVulnerability = 5;
-  }
-
-  // Null carValue / isBankFinanced → no debt signal (0 pts)
-  let debtObligation = 0;
-  if (p.isBankFinanced === true && p.carValue !== null) {
-    debtObligation = p.carValue > HIGH_VALUE_CAR ? 25 : 15;
-  }
-
-  // Null salaryBand → no income signal (0 pts)
-  const salaryRank = p.salaryBand !== null ? (SALARY_RANK[p.salaryBand] ?? 0) : -1;
-  const incomeReplacement = salaryRank === 2 ? 20 : salaryRank === 1 ? 10 : 0;
-
-  return [
-    {
-      key: "dependency",
-      label: "Dependency risk (marital status + age)",
-      points: dependencyRisk,
-      max: 35,
-      note: !married
-        ? "Single — no spouse/dependents on record."
-        : primeAge
-        ? "Married, over 30 — spouse and likely children depend on this income."
-        : "Married, under 30 — spouse depends on this income; family may still be growing.",
-    },
-    {
-      key: "visa",
-      label: "Sponsorship vulnerability",
-      points: visaVulnerability,
-      max: 20,
-      note: p.visaCategory === null
-        ? "Visa category not provided — signal not scored."
-        : sponsored && married
-        ? "Family's UAE residency is sponsored by this person — loss of income jeopardises their status."
-        : sponsored
-        ? "On a sponsored visa — some dependency, but no family on record yet."
-        : freelancer
-        ? "Self-employed — no employer-provided life cover to fall back on."
-        : wealthVisa
-        ? "Golden Visa / Investor profile — residency is independent of a single employer."
-        : "No notable sponsorship exposure.",
-    },
-    {
-      key: "debt",
-      label: "Debt obligation (car financing)",
-      points: debtObligation,
-      max: 25,
-      note: p.carValue === null
-        ? "Car data not provided — debt signal not scored."
-        : p.isBankFinanced
-        ? `Bank-financed vehicle (AED ${p.carValue.toLocaleString()}) — an outstanding loan that would fall to survivors.`
-        : "No outstanding vehicle finance on record.",
-    },
-    {
-      key: "income",
-      label: "Income to replace (salary band)",
-      points: incomeReplacement,
-      max: 20,
-      note: p.salaryBand === null
-        ? "Salary band not provided — signal not scored."
-        : salaryRank === 2
-        ? "Top salary band — largest income gap to cover for dependents."
-        : salaryRank === 1
-        ? "Mid salary band — moderate income to replace."
-        : "Limited standalone income to replace.",
-    },
-  ];
+function detectLeadType(p: Policyholder): LeadType {
+  const hasMotor = p.carValue !== null || p.isBankFinanced !== null;
+  const hasHealth = p.salaryBand !== null || p.visaCategory !== null;
+  if (hasMotor && hasHealth) return "Full";
+  if (hasMotor) return "Motor";
+  return "Health";
 }
 
-function savingsComponents(p: Policyholder): ScoreComponent[] {
-  const salaryRank = p.salaryBand !== null ? (SALARY_RANK[p.salaryBand] ?? 0) : -1;
-  const highSalary = salaryRank === 2;
-  const midSalary = salaryRank === 1;
-  const freelancer = p.visaCategory === "Self Employed / Freelancer";
-  const golden = p.visaCategory === "Golden Visa";
-  const investor = p.visaCategory === "Investor / Partner";
+// ─── Shared components (Age + Marital Status) ─────────────────────────────────
 
-  let capacity = highSalary ? 25 : midSalary ? 12 : 0;
-  // Only add asset bonus if car data is present
-  if (p.carValue !== null && p.carValue > HIGH_VALUE_CAR && p.isBankFinanced === false) capacity += 10;
+function ageLifeComponent(age: number): ScoreComponent {
+  const points =
+    age >= 30 && age <= 45 ? 30 :
+    age >= 25 && age <= 29 ? 20 :
+    age >= 46 && age <= 55 ? 15 :
+    age > 55               ? 10 : 5;
 
-  let horizon: number, horizonNote: string;
-  if (p.age <= 35) {
-    horizon = 25;
-    horizonNote = "20s-mid 30s — long runway for compounding to work in their favour.";
-  } else if (p.age <= 45) {
-    horizon = 15;
-    horizonNote = "Late 30s-mid 40s — solid runway, structured saving still highly effective.";
+  const note =
+    age >= 30 && age <= 45 ? "Age 30–45 — peak life insurance need, most likely to have dependents and active income to protect." :
+    age >= 25 && age <= 29 ? "Age 25–29 — early career stage, growing need as responsibilities build." :
+    age >= 46 && age <= 55 ? "Age 46–55 — still relevant but dependents may be more independent." :
+    age > 55               ? "Over 55 — protection still relevant but nature of need shifts." :
+                             "Under 25 — limited dependents or financial obligations typically.";
+
+  return { key: "age_life", label: "Age", points, max: 30, note };
+}
+
+function ageSavingsComponent(age: number): ScoreComponent {
+  const points =
+    age >= 31 && age <= 40 ? 30 :
+    age <= 30               ? 25 :
+    age >= 41 && age <= 50  ? 20 : 10;
+
+  const note =
+    age >= 31 && age <= 40 ? "Age 31–40 — peak earning years with urgency to start; best window for a savings plan to compound." :
+    age <= 30               ? "Under 30 — longest investment horizon; compounding works hardest at this age." :
+    age >= 41 && age <= 50  ? "Age 41–50 — runway is shortening, urgency to act is high." :
+                              "Over 50 — limited accumulation runway; near-term income products may suit better.";
+
+  return { key: "age_savings", label: "Age", points, max: 30, note };
+}
+
+function maritalLifeComponent(status: string): ScoreComponent {
+  const points =
+    status === "Married"  ? 25 :
+    status === "Divorced" ? 15 :
+    status === "Widowed"  ? 10 : 5;
+
+  const note =
+    status === "Married"  ? "Married — spouse and likely children depend on this income; highest protection need." :
+    status === "Divorced" ? "Divorced — likely has children or financial obligations from the relationship." :
+    status === "Widowed"  ? "Widowed — may have dependents; protection still relevant." :
+                            "Single — limited dependents on record; lower immediate need.";
+
+  return { key: "marital_life", label: "Marital Status", points, max: 25, note };
+}
+
+function maritalSavingsComponent(status: string): ScoreComponent {
+  const points =
+    status === "Married"  ? 20 :
+    status === "Divorced" ? 15 :
+    status === "Widowed"  ? 12 : 10;
+
+  const note =
+    status === "Married"  ? "Married — family savings goals (education, retirement together) add strong motivation to plan." :
+    status === "Divorced" ? "Divorced — independent financial planning becomes more important." :
+    status === "Widowed"  ? "Widowed — sole financial planner for the household." :
+                            "Single — individual wealth accumulation focus.";
+
+  return { key: "marital_savings", label: "Marital Status", points, max: 20, note };
+}
+
+// ─── Motor-specific components ────────────────────────────────────────────────
+
+function carDebtLifeComponent(carValue: number | null, isBankFinanced: boolean | null): ScoreComponent {
+  if (carValue === null || isBankFinanced === null) {
+    return { key: "car_debt_life", label: "Car Value & Financing", points: 0, max: 45, note: "No car data available." };
+  }
+
+  let points = 0;
+  let note = "";
+
+  if (isBankFinanced) {
+    if (carValue > 300_000)       { points = 45; note = `Bank-financed vehicle at AED ${carValue.toLocaleString()} — high-value debt that would fall directly to survivors.`; }
+    else if (carValue > 150_000)  { points = 35; note = `Bank-financed vehicle at AED ${carValue.toLocaleString()} — significant outstanding loan creating a strong protection case.`; }
+    else                          { points = 20; note = `Bank-financed vehicle at AED ${carValue.toLocaleString()} — moderate debt obligation in the event of loss of income.`; }
   } else {
-    horizon = 5;
-    horizonNote = "Mid-40s or older — shorter accumulation runway; urgency matters more than horizon.";
+    if (carValue > 300_000)       { points = 10; note = `Owns a high-value vehicle (AED ${carValue.toLocaleString()}) outright — wealth signal, but no active debt obligation.`; }
+    else                          { points = 0;  note = `Vehicle not financed — no debt obligation to factor into life cover.`; }
   }
 
-  let urgency = 0;
-  let urgencyNote = "Standard runway to retirement — no acute trigger identified.";
-  if (freelancer && p.age > 42) {
-    urgency = 25;
-    urgencyNote = "Self-employed AND past 42 — no End-of-Service benefit and a shrinking runway. Acute need.";
-  } else if (freelancer) {
-    urgency = 15;
-    urgencyNote = "Self-employed — no employer gratuity / pension safety net to rely on.";
-  } else if (p.age > 42) {
-    urgency = 10;
-    urgencyNote = "Past 42 — retirement runway shortening, worth raising proactively.";
+  return { key: "car_debt_life", label: "Car Value & Financing", points, max: 45, note };
+}
+
+function carWealthSavingsComponent(carValue: number | null, isBankFinanced: boolean | null): ScoreComponent {
+  if (carValue === null || isBankFinanced === null) {
+    return { key: "car_wealth_savings", label: "Car Value & Financing", points: 0, max: 50, note: "No car data available." };
   }
 
-  let commitment: number, commitmentNote: string;
-  if (p.visaCategory === null) {
-    commitment = 0;
-    commitmentNote = "Visa category not provided — UAE commitment signal not scored.";
-  } else if (golden) {
-    commitment = 15;
-    commitmentNote = "Golden Visa — explicit long-term UAE residency; long-horizon plans make sense.";
-  } else if (investor) {
-    commitment = 10;
-    commitmentNote = "Investor/Partner — business roots in the UAE suggest a long-term stay.";
-  } else if (freelancer) {
-    commitment = 8;
-    commitmentNote = "Self-employed and established locally — moderate long-term likelihood.";
+  let points = 0;
+  let note = "";
+
+  if (!isBankFinanced) {
+    if (carValue > 300_000)       { points = 50; note = `Owns a AED ${carValue.toLocaleString()} vehicle outright — strong HNI signal with clear disposable wealth to invest.`; }
+    else if (carValue > 200_000)  { points = 40; note = `AED ${carValue.toLocaleString()} vehicle, unfinanced — solid wealth base, good candidate for a structured savings plan.`; }
+    else if (carValue > 150_000)  { points = 30; note = `AED ${carValue.toLocaleString()} vehicle, unfinanced — moderate wealth signal, capacity to save likely.`; }
+    else if (carValue > 80_000)   { points = 15; note = `AED ${carValue.toLocaleString()} vehicle, unfinanced — some discretionary wealth but limited signal.`; }
+    else                          { points = 5;  note = `Lower-value unfinanced vehicle — limited wealth signal from car data alone.`; }
   } else {
-    commitment = 5;
-    commitmentNote = "Sponsored/employment-tied visa — residency is linked to a single employer.";
+    if (carValue > 200_000)       { points = 20; note = `High-value vehicle (AED ${carValue.toLocaleString()}) but bank-financed — income is likely strong but current cash is committed to repayments.`; }
+    else                          { points = 5;  note = `Financed vehicle — income committed to repayments; limited free capital for savings right now.`; }
   }
 
-  return [
-    {
-      key: "capacity",
-      label: "Capacity to save (income + assets)",
-      points: capacity,
-      max: 35,
-      note: p.salaryBand === null
-        ? "Salary band not provided — capacity signal not scored."
-        : highSalary
-        ? "Top salary band" +
-          (p.carValue !== null && p.carValue > HIGH_VALUE_CAR && p.isBankFinanced === false
-            ? ", plus an unencumbered high-value asset — genuine disposable wealth."
-            : " — meaningful disposable income.")
-        : midSalary
-        ? "Mid salary band — some room to save with the right structure."
-        : "Limited disposable income on record today.",
-    },
-    { key: "horizon", label: "Investment horizon (age)", points: horizon, max: 25, note: horizonNote },
-    { key: "urgency", label: "Retirement urgency (no safety net + age)", points: urgency, max: 25, note: urgencyNote },
-    { key: "commitment", label: "Long-term UAE commitment (visa)", points: commitment, max: 15, note: commitmentNote },
-  ];
+  return { key: "car_wealth_savings", label: "Car Value & Financing", points, max: 50, note };
 }
 
-function findComponent(components: ScoreComponent[], key: string): number {
-  return components.find((c) => c.key === key)?.points ?? 0;
+// ─── Health-specific components ───────────────────────────────────────────────
+
+function salaryLifeComponent(salaryBand: string | null): ScoreComponent {
+  if (salaryBand === null) {
+    return { key: "salary_life", label: "Salary Band", points: 0, max: 25, note: "No salary data available." };
+  }
+
+  const points =
+    salaryBand === "More than 12000"                ? 25 :
+    salaryBand === "4000 - 12000"                   ? 15 :
+    salaryBand === "No Salary Commission Only"      ? 10 :
+    salaryBand === "Below 4000"                     ? 5  : 0;
+
+  const note =
+    salaryBand === "More than 12000"                ? "Top salary band — largest income gap to replace if this person is lost; strongest life cover case." :
+    salaryBand === "4000 - 12000"                   ? "Mid salary band — meaningful income that dependents would need replaced." :
+    salaryBand === "No Salary Commission Only"      ? "Commission-based income — variable and less predictable; dependents face real uncertainty." :
+    salaryBand === "Below 4000"                     ? "Lower salary band — smaller income gap but protection still relevant if there are dependents." :
+                                                      "No independent income recorded — protection less driven by income replacement.";
+
+  return { key: "salary_life", label: "Salary Band", points, max: 25, note };
 }
 
-function deriveBuckets(
-  p: Policyholder,
-  life: ScoreComponent[],
-  savings: ScoreComponent[],
-  lifeScore: number,
-  savingsScore: number
-): Bucket[] {
+function visaLifeComponent(visaCategory: string | null): ScoreComponent {
+  if (visaCategory === null) {
+    return { key: "visa_life", label: "Visa Category", points: 0, max: 20, note: "No visa data available." };
+  }
+
+  const points =
+    visaCategory === "Sponsored (Employer or Family)" ? 20 :
+    visaCategory === "Self Employed / Freelancer"      ? 15 :
+    visaCategory === "Investor / Partner"              ? 10 : 8;
+
+  const note =
+    visaCategory === "Sponsored (Employer or Family)" ? "Sponsored visa — family's UAE residency tied to this person's employment; loss of income threatens their legal status." :
+    visaCategory === "Self Employed / Freelancer"      ? "Self-employed — no employer-provided life or disability cover to fall back on." :
+    visaCategory === "Investor / Partner"              ? "Investor/Partner visa — residency is independent of a single employer." :
+                                                         "Golden Visa — long-term stable residency; less acute visa dependency risk.";
+
+  return { key: "visa_life", label: "Visa Category", points, max: 20, note };
+}
+
+function salarySavingsComponent(salaryBand: string | null): ScoreComponent {
+  if (salaryBand === null) {
+    return { key: "salary_savings", label: "Salary Band", points: 0, max: 30, note: "No salary data available." };
+  }
+
+  const points =
+    salaryBand === "More than 12000"                ? 30 :
+    salaryBand === "4000 - 12000"                   ? 18 :
+    salaryBand === "No Salary Commission Only"      ? 10 :
+    salaryBand === "Below 4000"                     ? 5  : 0;
+
+  const note =
+    salaryBand === "More than 12000"                ? "Top salary band — highest capacity to commit to a regular savings or investment plan." :
+    salaryBand === "4000 - 12000"                   ? "Mid salary band — meaningful disposable income; structured saving is realistic." :
+    salaryBand === "No Salary Commission Only"      ? "Commission-based — income is variable; a savings plan with flexibility would suit." :
+    salaryBand === "Below 4000"                     ? "Lower salary band — limited disposable income; smaller regular savings still possible." :
+                                                      "No independent income — limited capacity to commit to a savings plan currently.";
+
+  return { key: "salary_savings", label: "Salary Band", points, max: 30, note };
+}
+
+function visaSavingsComponent(visaCategory: string | null): ScoreComponent {
+  if (visaCategory === null) {
+    return { key: "visa_savings", label: "Visa Category", points: 0, max: 20, note: "No visa data available." };
+  }
+
+  const points =
+    visaCategory === "Golden Visa"                     ? 20 :
+    visaCategory === "Investor / Partner"              ? 18 :
+    visaCategory === "Self Employed / Freelancer"      ? 15 :
+                                                         8;
+
+  const note =
+    visaCategory === "Golden Visa"                     ? "Golden Visa — explicit long-term UAE residency; long-horizon investment plans make strong sense." :
+    visaCategory === "Investor / Partner"              ? "Investor/Partner — business roots in the UAE suggest a long-term stay; savings plans are well-suited." :
+    visaCategory === "Self Employed / Freelancer"      ? "Self-employed — no End-of-Service gratuity from an employer; building their own retirement fund is urgent." :
+                                                         "Sponsored visa — residency tied to employment; less certainty on long-term UAE stay.";
+
+  return { key: "visa_savings", label: "Visa Category", points, max: 20, note };
+}
+
+// ─── Score normalisation ──────────────────────────────────────────────────────
+
+function normalizeScore(components: ScoreComponent[]): number {
+  const totalPoints = components.reduce((s, c) => s + c.points, 0);
+  const totalMax = components.reduce((s, c) => s + c.max, 0);
+  if (totalMax === 0) return 0;
+  return Math.round((totalPoints / totalMax) * 100);
+}
+
+// ─── Build component lists by lead type ───────────────────────────────────────
+
+function buildLifeComponents(p: Policyholder, leadType: LeadType): ScoreComponent[] {
+  const shared = [ageLifeComponent(p.age), maritalLifeComponent(p.maritalStatus)];
+  if (leadType === "Motor") return [...shared, carDebtLifeComponent(p.carValue, p.isBankFinanced)];
+  if (leadType === "Health") return [...shared, salaryLifeComponent(p.salaryBand), visaLifeComponent(p.visaCategory)];
+  // Full — all signals
+  return [...shared, carDebtLifeComponent(p.carValue, p.isBankFinanced), salaryLifeComponent(p.salaryBand), visaLifeComponent(p.visaCategory)];
+}
+
+function buildSavingsComponents(p: Policyholder, leadType: LeadType): ScoreComponent[] {
+  const shared = [ageSavingsComponent(p.age), maritalSavingsComponent(p.maritalStatus)];
+  if (leadType === "Motor") return [...shared, carWealthSavingsComponent(p.carValue, p.isBankFinanced)];
+  if (leadType === "Health") return [...shared, salarySavingsComponent(p.salaryBand), visaSavingsComponent(p.visaCategory)];
+  // Full — all signals
+  return [...shared, carWealthSavingsComponent(p.carValue, p.isBankFinanced), salarySavingsComponent(p.salaryBand), visaSavingsComponent(p.visaCategory)];
+}
+
+// ─── Campaign bucket routing ──────────────────────────────────────────────────
+
+function deriveBuckets(p: Policyholder, lifeScore: number, savingsScore: number): Bucket[] {
   const buckets: Bucket[] = [];
 
   if (lifeScore > BUCKET_THRESHOLD) {
@@ -228,38 +269,48 @@ function deriveBuckets(
       buckets.push({
         category: "Life",
         name: "Family Protection",
-        reason: "Has dependents whose financial stability relies on this person's income.",
+        reason: "Married — spouse and likely children depend on this income.",
       });
     }
-    if (findComponent(life, "debt") > 0) {
+    if (p.isBankFinanced === true) {
       buckets.push({
         category: "Life",
         name: "Debt Protection",
-        reason: "Carrying vehicle finance that would otherwise become a liability for survivors.",
+        reason: "Bank-financed vehicle — an outstanding loan that would fall to survivors.",
       });
     }
   }
 
   if (savingsScore > BUCKET_THRESHOLD) {
-    if (findComponent(savings, "urgency") >= 15) {
+    const isFreelancer = p.visaCategory === "Self Employed / Freelancer";
+    const hasHighCarWealth = p.carValue !== null && p.carValue > 150_000 && p.isBankFinanced === false;
+    const hasHighSalary = p.salaryBand === "More than 12000";
+
+    if (p.age > 40 || isFreelancer) {
       buckets.push({
         category: "Savings",
         name: "Retirement",
-        reason: "Limited employer safety net and/or a shortening runway to retirement.",
+        reason: isFreelancer
+          ? "Self-employed — no employer gratuity or pension; building their own retirement fund is urgent."
+          : "Over 40 — retirement runway is shortening; a structured plan is timely.",
       });
     }
-    if (findComponent(savings, "horizon") >= 25 && findComponent(savings, "capacity") >= 12) {
+
+    if ((hasHighCarWealth || hasHighSalary) && p.age < 45) {
       buckets.push({
         category: "Savings",
         name: "Wealth Accumulation",
-        reason: "Young, earning, and has a long runway for a structured investment plan to compound.",
+        reason: hasHighCarWealth
+          ? "High-value unfinanced vehicle signals disposable wealth and appetite for investment."
+          : "Top salary band with time on their side — ideal profile for a structured wealth plan.",
       });
     }
+
     if (p.maritalStatus === "Married") {
       buckets.push({
         category: "Savings",
         name: "Education",
-        reason: "Likely to have children whose future education costs benefit from early, structured saving.",
+        reason: "Married — likely to have children whose future education costs benefit from early, structured saving.",
       });
     }
   }
@@ -267,18 +318,23 @@ function deriveBuckets(
   return buckets;
 }
 
+// ─── Public API ───────────────────────────────────────────────────────────────
+
 export function scorePolicyholder(person: Policyholder): ScoredPolicyholder {
-  const life = lifeComponents(person);
-  const savings = savingsComponents(person);
-  const lifeScore = life.reduce((sum, c) => sum + c.points, 0);
-  const savingsScore = savings.reduce((sum, c) => sum + c.points, 0);
+  const leadType = detectLeadType(person);
+  const life = buildLifeComponents(person, leadType);
+  const savings = buildSavingsComponents(person, leadType);
+  const lifeScore = normalizeScore(life);
+  const savingsScore = normalizeScore(savings);
+
   return {
     person,
+    leadType,
     life,
     savings,
     lifeScore,
     savingsScore,
-    buckets: deriveBuckets(person, life, savings, lifeScore, savingsScore),
+    buckets: deriveBuckets(person, lifeScore, savingsScore),
   };
 }
 

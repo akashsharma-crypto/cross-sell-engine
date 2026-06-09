@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Policyholder } from "@/types/policyholder";
-import { scorePolicyholder, tierOf, type Bucket, type ScoreComponent, type ScoredPolicyholder } from "@/lib/scoring/propensity-engine";
+import { scorePolicyholder, tierOf, type Bucket, type LeadType, type ScoreComponent, type ScoredPolicyholder } from "@/lib/scoring/propensity-engine";
 import styles from "./PropensityDashboard.module.css";
 
 interface Props {
@@ -186,7 +186,10 @@ function RowGroup({ row, isExpanded, onToggle, onSimulateClick }: RowGroupProps)
     <>
       <tr className={isExpanded ? styles.rowExpanded : ""} onClick={onToggle}>
         <td data-label="Policyholder" className={styles.nameCell}>
-          <div className={styles.name}>{p.name}</div>
+          <div className={styles.nameRow}>
+            <span className={styles.name}>{p.name}</span>
+            <LeadTypeBadge type={row.leadType} />
+          </div>
           <div className={styles.contact}>
             +971 {p.mobile} &middot; {p.email}
           </div>
@@ -254,6 +257,7 @@ function DetailPanel({ row, onSimulateClick }: { row: ScoredPolicyholder; onSimu
         <div>
           <h4>Policyholder profile</h4>
           <ul className={styles.profileList}>
+            <ProfileRow k="Lead type" v={row.leadType} />
             <ProfileRow k="Mobile" v={`+971 ${p.mobile}`} />
             <ProfileRow k="Email" v={p.email} />
             <ProfileRow k="Age" v={String(p.age)} />
@@ -309,5 +313,13 @@ function ProfileRow({ k, v }: { k: string; v: string }) {
       <span className={styles.k}>{k}</span>
       <span className={styles.v}>{v}</span>
     </li>
+  );
+}
+
+function LeadTypeBadge({ type }: { type: LeadType }) {
+  return (
+    <span className={`${styles.leadTypeBadge} ${type === "Motor" ? styles.leadMotor : type === "Health" ? styles.leadHealth : styles.leadFull}`}>
+      {type}
+    </span>
   );
 }

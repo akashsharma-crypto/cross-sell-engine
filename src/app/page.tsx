@@ -19,6 +19,7 @@ export default function HomePage() {
       const inBucket = (name: string) => scored.buckets.some((b) => b.name === name) ? "Yes" : "No";
       return {
         "Name": p.name,
+        "Lead Type": scored.leadType,
         "Mobile": p.mobile,
         "Email": p.email,
         "Age": p.age,
