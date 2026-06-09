@@ -105,7 +105,12 @@ function str(value: unknown): string {
 
 function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") { const n = Number(value.replace(/[, ]/g, "")); return Number.isFinite(n) ? n : null; }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;                              // empty string → null, not 0
+    const n = Number(trimmed.replace(/[, ]/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
   return null;
 }
 

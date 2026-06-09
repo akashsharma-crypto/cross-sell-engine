@@ -25,34 +25,45 @@ export function UploadModal({ onClose, onLoaded }: Props) {
     // Lead Type column tells the system which scoring model to use.
     // Valid Lead Type values: Motor | Health | Both
     const data = [
-      ["Name", "Mobile", "Email", "Age", "Marital Status", "Lead Type", "Car Value", "Is Bank Financed?", "Salary Band", "Visa Category"],
-      ["Ahmed Khan",     "501234567", "ahmed.khan@email.com",     34, "Married", "Motor",  85000,  "Yes", "",                ""],
-      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single",  "Health", "",     "",    "More than 12000", "Sponsored (Employer or Family)"],
-      ["Raj Patel",      "553456789", "raj.patel@email.com",      41, "Married", "Both",   350000, "No",  "More than 12000", "Investor / Partner"],
-      ["Maria Garcia",   "584567890", "maria.garcia@email.com",   26, "Single",  "Motor",  45000,  "Yes", "",                ""],
+      ["Name", "Mobile", "Email", "Age", "Marital Status", "Lead Type", "Car Value", "Is Bank Financed?", "Salary Band", "Visa Category", "Ownership Type", "Property Type", "Claims History", "Coverage Type", "Contents Value", "Personal Belongings Value", "Location Area"],
+      ["Ahmed Khan",     "501234567", "ahmed.khan@email.com",     34, "Married", "Motor",  85000,  "Yes", "",                "",                               "",                                    "",          "",    "",                             "",                          "",                              ""],
+      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single",  "Health", "",     "",    "More than 12000", "Sponsored (Employer or Family)", "",                                    "",          "",    "",                             "",                          "",                              ""],
+      ["Raj Patel",      "553456789", "raj.patel@email.com",      41, "Married", "Both",   350000, "No",  "More than 12000", "Investor / Partner",             "",                                    "",          "",    "",                             "",                          "",                              ""],
+      ["Fatima Hassan",  "556789012", "fatima.hassan@email.com",  "", "",        "Home",   "",     "",    "",                "",                               "Homeowner Living in Property",        "Apartment", "No",  "Contents & Personal Belongings", "AED 150,001-200,000",       "AED 25,001-50,000",             "Dubai Marina"],
+      ["Omar Al-Rashid", "554321098", "omar.alrashid@email.com",  "", "",        "Home",   "",     "",    "",                "",                               "Homeowner Renting Out Property",      "Villa",     "No",  "Contents Only",                 "AED 300,001-400,000",       "",                              "Palm Jumeirah"],
     ];
 
     // Notes row at bottom so the user knows valid values
     const notes = [
       [],
       ["--- Valid values ---"],
-      ["Lead Type:", "", "Motor | Health | Both"],
+      ["Lead Type:", "", "Motor | Health | Both | Home"],
       ["Marital Status:", "", "Married | Single | Divorced | Widowed"],
       ["Is Bank Financed?:", "", "Yes | No"],
       ["Salary Band:", "", "Below 4000 | 4000 - 12000 | More than 12000 | No Salary (dependent / Children) | No Salary Commission Only"],
       ["Visa Category:", "", "Sponsored (Employer or Family) | Investor / Partner | Golden Visa | Self Employed / Freelancer"],
+      ["Ownership Type:", "", "Homeowner Living in Property | Homeowner Renting Out Property | Tenant Renting Property"],
+      ["Property Type:", "", "Apartment | Villa"],
+      ["Claims History:", "", "Yes | No"],
+      ["Coverage Type:", "", "Contents Only | Contents & Personal Belongings"],
+      ["Contents Value:", "", "AED 1-50,000 | AED 50,001-100,000 | AED 100,001-150,000 | AED 150,001-200,000 | AED 200,001-250,000 | AED 250,001-300,000 | AED 300,001-400,000"],
+      ["Personal Belongings Value:", "", "AED 1-25,000 | AED 25,001-50,000 | AED 50,001-100,000 | AED 100,001-150,000 | AED 150,001 and Above"],
       [],
       ["--- Notes ---"],
-      ["Motor leads:", "", "Fill Age, Marital Status, Car Value, Is Bank Financed. Leave Health + Home fields blank."],
-      ["Health leads:", "", "Fill Age, Marital Status, Salary Band, Visa Category. Leave Motor + Home fields blank."],
-      ["Both:", "", "Fill Age, Marital Status + all Motor and Health fields."],
-      ["Home leads:", "", "Fill Ownership Type, Property Type, Claims History, Coverage Type, Contents Value, Personal Belongings Value, Location Area. Age + Marital Status not required."],
+      ["Motor leads:", "", "Fill Age, Marital Status, Car Value, Is Bank Financed. Leave Health + Home columns blank."],
+      ["Health leads:", "", "Fill Age, Marital Status, Salary Band, Visa Category. Leave Motor + Home columns blank."],
+      ["Both:", "", "Fill Age, Marital Status + all Motor and Health columns."],
+      ["Home leads:", "", "Fill Ownership Type through Location Area. Age + Marital Status not required — leave blank."],
     ];
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([...data, ...notes]);
     // Set column widths
-    ws["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 28 }, { wch: 6 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 30 }, { wch: 34 }];
+    ws["!cols"] = [
+      { wch: 22 }, { wch: 14 }, { wch: 32 }, { wch: 6 }, { wch: 16 }, { wch: 10 },
+      { wch: 12 }, { wch: 18 }, { wch: 32 }, { wch: 34 },
+      { wch: 34 }, { wch: 14 }, { wch: 16 }, { wch: 30 }, { wch: 24 }, { wch: 26 }, { wch: 22 },
+    ];
     XLSX.utils.book_append_sheet(wb, ws, "Leads");
     XLSX.writeFile(wb, "leads-template.xlsx");
   }
