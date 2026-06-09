@@ -282,11 +282,13 @@ function claimsSavingsComponent(p: Policyholder): ScoreComponent {
 
 // ─── Score normalisation ──────────────────────────────────────────────────────
 
+const MAX_SCORE = 90; // No model should claim absolute certainty — 90 is the highest confidence we assign
+
 function normalizeScore(components: ScoreComponent[]): number {
   const totalPoints = components.reduce((s, c) => s + c.points, 0);
   const totalMax    = components.reduce((s, c) => s + c.max, 0);
   if (totalMax === 0) return 0;
-  return Math.round((totalPoints / totalMax) * 100);
+  return Math.min(Math.round((totalPoints / totalMax) * 100), MAX_SCORE);
 }
 
 // ─── Build component lists by lead type ───────────────────────────────────────
