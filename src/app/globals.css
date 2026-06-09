@@ -53,6 +53,24 @@ a {
   font-size: 1.25rem;
   margin: 0;
   color: var(--ink);
+  flex: 1;
+}
+
+.uploadBtn {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--brand-blue);
+  background: var(--brand-blue);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.uploadBtn:hover {
+  background: var(--brand-blue-dark);
+  border-color: var(--brand-blue-dark);
 }
 
 .emptyHint {

@@ -1,0 +1,129 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 51, 58, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(43, 51, 58, 0.18);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  font-size: 1.05rem;
+  margin: 0;
+  color: var(--ink);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--slate);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  line-height: 1;
+}
+.closeBtn:hover { background: var(--panel); color: var(--ink); }
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--slate);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.templateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand-blue);
+  background: #eef5fb;
+  border: 1px solid #cfe1f1;
+  border-radius: 7px;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  text-decoration: none;
+}
+.templateBtn:hover { background: #dceefa; }
+
+.dropzone {
+  border: 1.5px dashed var(--line);
+  border-radius: 10px;
+  padding: 1.75rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background: var(--panel);
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone:hover { border-color: var(--brand-blue); background: #f5f9fc; }
+.dropzoneDrag { border-color: var(--brand-blue); background: #eef5fb; }
+.dropzoneSuccess { border-color: var(--green); background: #eef7f1; }
+
+.hiddenInput { display: none; }
+
+.dropIcon {
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+  color: var(--slate);
+  font-weight: 700;
+}
+.dropzoneSuccess .dropIcon { color: var(--green); }
+
+.dropTitle {
+  margin: 0 0 0.2rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.dropSub {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--low);
+}
+
+.successMsg {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.errorMsg {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--red);
+}
+
+.warnings {
+  margin-top: 0.65rem;
+  font-size: 0.78rem;
+  color: var(--slate);
+}
+.warnings summary { cursor: pointer; font-weight: 600; }
+.warnings ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
+.warnings li { margin-bottom: 0.2rem; }

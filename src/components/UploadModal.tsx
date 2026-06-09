@@ -1,0 +1,129 @@
+"use client";
+
+import { useRef, useState } from "react";
+import * as XLSX from "xlsx";
+import { parseWorkbook } from "@/lib/upload/parse-workbook";
+import type { Policyholder } from "@/types/policyholder";
+import styles from "./UploadModal.module.css";
+
+interface Props {
+  onClose: () => void;
+  onLoaded: (policyholders: Policyholder[]) => void;
+}
+
+export function UploadModal({ onClose, onLoaded }: Props) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  function downloadTemplate() {
+    const motorData = [
+      ["Name", "Mobile", "Email", "Age", "Marital Status", "Car Value", "Is Bank Financed?"],
+      ["Ahmed Khan", "501234567", "ahmed.khan@email.com", 34, "Married", 85000, "Yes"],
+      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single", 120000, "Yes"],
+    ];
+    const healthData = [
+      ["Name", "Mobile", "Email", "Age", "Marital Status", "Salary Band", "Visa Category"],
+      ["Ahmed Khan", "501234567", "ahmed.khan@email.com", 34, "Married", "4000 - 12000", "Sponsored (Employer or Family)"],
+      ["Sarah Williams", "522345678", "sarah.williams@email.com", 29, "Single", "More than 12000", "Sponsored (Employer or Family)"],
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(motorData), "Motor");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(healthData), "Health");
+    XLSX.writeFile(wb, "policyholder-template.xlsx");
+  }
+
+  async function handleFile(file: File) {
+    setFileName(file.name);
+    setStatus("idle");
+    setMessage("");
+    setWarnings([]);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const { policyholders, warnings } = parseWorkbook(buffer);
+
+      if (policyholders.length === 0) {
+        setStatus("error");
+        setMessage('No matching records found. Make sure the file has "Motor" and "Health" sheets with matching email addresses.');
+        return;
+      }
+
+      setWarnings(warnings);
+      setStatus("success");
+      setMessage(`${policyholders.length} policyholders loaded and scored.`);
+      setTimeout(() => {
+        onLoaded(policyholders);
+        onClose();
+      }, 900);
+    } catch {
+      setStatus("error");
+      setMessage("Could not read this file. Make sure it is a valid .xlsx workbook.");
+    }
+  }
+
+  function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Upload Leads</h2>
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        <p className={styles.hint}>
+          Upload a workbook with a <strong>Motor</strong> sheet and a <strong>Health</strong> sheet.
+          Records are matched by email — customers must appear in both sheets to be scored.
+        </p>
+
+        <button className={styles.templateBtn} onClick={downloadTemplate}>
+          ↓ Download Template
+        </button>
+
+        <div
+          className={`${styles.dropzone} ${dragging ? styles.dropzoneDrag : ""} ${status === "success" ? styles.dropzoneSuccess : ""}`}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          onClick={() => inputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+        >
+          <input ref={inputRef} type="file" accept=".xlsx,.xls" onChange={onInputChange} className={styles.hiddenInput} />
+          <div className={styles.dropIcon}>{status === "success" ? "✓" : "↑"}</div>
+          <p className={styles.dropTitle}>
+            {fileName ?? "Drop your .xlsx file here or click to browse"}
+          </p>
+          {!fileName && <p className={styles.dropSub}>Supports .xlsx and .xls</p>}
+        </div>
+
+        {status === "success" && <p className={styles.successMsg}>{message}</p>}
+        {status === "error" && <p className={styles.errorMsg}>{message}</p>}
+
+        {warnings.length > 0 && (
+          <details className={styles.warnings}>
+            <summary>{warnings.length} row{warnings.length === 1 ? "" : "s"} skipped or flagged</summary>
+            <ul>
+              {warnings.map((w, i) => <li key={i}>{w}</li>)}
+            </ul>
+          </details>
+        )}
+      </div>
+    </div>
+  );
+}
